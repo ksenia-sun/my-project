@@ -17,14 +17,71 @@
 		.canvas-container {
 			border: 2px solid #000;
 		}
+		.score-item {
+			margin-top: 10px;
+			font-size: 20px;
+		}
+		.startButton {
+			margin-top: 20px;
+			padding: 10px 20px;
+			font-size: 16px;
+			cursor: pointer;
+		}
 	</style>
 </head>
 <body>
+	<h1>Игра "Змейка"</h1>
+	<p>Управление: стрелки вверх, вниз, влево, вправо</p>
+	<p id="score" class="score-item">Счет: 0</p>
+
 	<canvas id="canvas" class="canvas-container" width="400" height="400"></canvas>
+	<div>
+		<button class="startButton">Начать игру</button>
+	</div>
 
 <script>
+	const srope = document.getElementById('score');
+	const startButton = document.querySelector('.startButton');
 	const canvas = document.querySelector('.canvas-container');
 	const ctx = canvas.getContext('2d');
+
+	const gridSize = 20;
+	let snake = [{
+			x: 200,
+			y: 200
+		}];
+
+	const startGame = () => {
+		// snake = [{
+		// 	x: 200,
+		// 	y: 200
+		// }];
+
+		score.textContent = 'Счет: 0';
+		startButton.style.display = 'none';
+	};
+
+	const gameLoop = () => {
+		ctx.clearRect(0,0, canvas.width, canvas.height);
+		ctx.fillStyle = '#ff00ff';
+
+		snake.forEach(segment => {
+			ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
+		});
+
+		console.log(snake);
+
+		// if (snake.length > 0) {
+		// 	setTimeout(gameLoop, 150);
+		// }
+	};
+
+	// создали базу
+
+	gameLoop();
+
+	startButton.addEventListener('click', startGame);
+
 </script>
 
 </body>
