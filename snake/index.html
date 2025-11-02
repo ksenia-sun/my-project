@@ -46,19 +46,21 @@
 	const ctx = canvas.getContext('2d');
 
 	const gridSize = 20;
-	let snake = [{
+	let snake, direction;
+
+	const startGame = () => {
+		snake = [{
 			x: 200,
 			y: 200
 		}];
 
-	const startGame = () => {
-		// snake = [{
-		// 	x: 200,
-		// 	y: 200
-		// }];
+		// default: the snake moves to the right
+		direction = "RIGHT";
 
 		score.textContent = 'Счет: 0';
 		startButton.style.display = 'none';
+
+		gameLoop();
 	};
 
 	const gameLoop = () => {
@@ -69,17 +71,31 @@
 			ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
 		});
 
-		console.log(snake);
+		let head = { ...snake[0] };
+		if (direction === 'UP')    head.y -= gridSize;
+		if (direction === 'DOWN')  head.y += gridSize;
+		if (direction === 'LEFT')  head.x -= gridSize;
+		if (direction === 'RIGHT') head.x += gridSize;
 
-		// if (snake.length > 0) {
-		// 	setTimeout(gameLoop, 150);
-		// }
+		snake.unshift(head);
+
+		if (snake.length > 0) {
+			setTimeout(gameLoop, 150);
+		}
 	};
 
-	// создали базу
+	const changeDirection = (event) => {
+		const key = event.key;
 
-	gameLoop();
+		if (key === 'ArrowUp' && direction !== 'DOWN') direction = 'UP';
+		else if (key === 'ArrowDown' && direction !== 'UP') direction = 'DOWN';
+		else if (key === 'ArrowLeft' && direction !== 'RIGHT') direction = 'LEFT'; 
+		else if (key === 'ArrowRight' && direction !== 'LEFT') direction = 'RIGHT';
 
+		console.log(direction); 
+	};
+
+	document.addEventListener('keydown', changeDirection);
 	startButton.addEventListener('click', startGame);
 
 </script>
