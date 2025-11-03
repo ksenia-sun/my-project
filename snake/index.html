@@ -77,6 +77,11 @@
 		}
 	}
 
+	function gameOver() {
+		console.log(`Игра окончена, Ваш счет: ${score}.`);
+		startButton.style.display = 'initial';
+	}
+
 	const gameLoop = () => {
 		ctx.clearRect(0,0, canvas.width, canvas.height);
 
@@ -97,6 +102,20 @@
 		if (direction === 'DOWN')  head.y += gridSize;
 		if (direction === 'LEFT')  head.x -= gridSize;
 		if (direction === 'RIGHT') head.x += gridSize;
+
+		// if hit a wall - game over
+		if (head.x < 0 || head.x >= canvas.width ||
+			head.y < 0 || head.y >= canvas.height) {
+			gameOver();
+			return;
+		}
+		// if run into ourselves
+		for (let i = 1; i < snake.length; i++) {
+			if (head.x === snake[i].x && head.y === snake[i].y) {
+				gameOver();
+				return;
+			}
+		}
 
 		snake.unshift(head);
 
