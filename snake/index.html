@@ -21,7 +21,7 @@
 			margin-top: 10px;
 			font-size: 20px;
 		}
-		.startButton {
+		.start-button {
 			margin-top: 20px;
 			padding: 10px 20px;
 			font-size: 16px;
@@ -31,23 +31,24 @@
 </head>
 <body>
 	<h1>Игра "Змейка"</h1>
-	<p>Управление: стрелки вверх, вниз, влево, вправо</p>
-	<p id="score" class="score-item">Счет: 0</p>
+	<p>Управление: стрелки ⬆️, ⬇️, ⬅️, ➡️</p>
+	<p id="score" class="score-item">Счет: 0, скорость: 150</p>
 
 	<canvas id="canvas" class="canvas-container" width="400" height="400"></canvas>
+
 	<div>
-		<button class="startButton">Начать игру</button>
+		<button class="start-button">Начать игру</button>
 	</div>
 
 <script>
-	const srope = document.getElementById('score');
-	const startButton = document.querySelector('.startButton');
+	const scoreItem = document.querySelector('.score-item');
+	const startButton = document.querySelector('.start-button');
 	const canvas = document.querySelector('.canvas-container');
 	const ctx = canvas.getContext('2d');
 
 	const gridSize = 20;
-	let snake, direction;
-
+	let snake, direction, food, score, gameSpeed;
+    
 	const startGame = () => {
 		snake = [{
 			x: 200,
@@ -57,19 +58,39 @@
 		// default: the snake moves to the right
 		direction = "RIGHT";
 
-		score.textContent = 'Счет: 0';
+		// создание еды
+		food = getRandomFoodPosition(); // food = { x, y }
+		score = 0;
+		gameSpeed = 150;
+
+		scoreItem.textContent = `Счет: 0, скорость: ${gameSpeed}`;
 		startButton.style.display = 'none';
+
 
 		gameLoop();
 	};
 
+	function getRandomFoodPosition() {
+		return {
+			x: Math.floor(Math.random() * (canvas.width / gridSize)) * gridSize,
+			y: Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize,
+		}
+	}
+
 	const gameLoop = () => {
 		ctx.clearRect(0,0, canvas.width, canvas.height);
-		ctx.fillStyle = '#ff00ff';
 
-		snake.forEach(segment => {
-			ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
-		});
+		// apple
+		ctx.fillStyle = '#f00';
+		ctx.fillRect(food.x, food.y, gridSize, gridSize);
+		// head snake
+	    ctx.fillStyle = '#0f0';
+	    ctx.fillRect(snake[0].x, snake[0].y, gridSize, gridSize);
+		// body snake
+		ctx.fillStyle = '#f0f';
+		for (let i = 1; i < snake.length; i++) {
+	        ctx.fillRect(snake[i].x, snake[i].y, gridSize, gridSize);
+	    }
 
 		let head = { ...snake[0] };
 		if (direction === 'UP')    head.y -= gridSize;
@@ -79,20 +100,30 @@
 
 		snake.unshift(head);
 
+		if (head.x === food.x && head.y === food.y) {
+			food = getRandomFoodPosition();
+			score += 1;
+
+			if (gameSpeed > 50) gameSpeed -= 5;
+
+			scoreItem.textContent = `Счет: ${score}, скорость: ${gameSpeed}`;
+		} else {
+			// delete tail
+			snake.pop();
+		}
+
 		if (snake.length > 0) {
-			setTimeout(gameLoop, 150);
+			setTimeout(gameLoop, gameSpeed);
 		}
 	};
 
 	const changeDirection = (event) => {
 		const key = event.key;
 
-		if (key === 'ArrowUp' && direction !== 'DOWN') direction = 'UP';
-		else if (key === 'ArrowDown' && direction !== 'UP') direction = 'DOWN';
+		if (key === 'ArrowUp' && direction !== 'DOWN')         direction = 'UP';
+		else if (key === 'ArrowDown' && direction !== 'UP')    direction = 'DOWN';
 		else if (key === 'ArrowLeft' && direction !== 'RIGHT') direction = 'LEFT'; 
 		else if (key === 'ArrowRight' && direction !== 'LEFT') direction = 'RIGHT';
-
-		console.log(direction); 
 	};
 
 	document.addEventListener('keydown', changeDirection);
