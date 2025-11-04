@@ -32,6 +32,7 @@
 <body>
 	<h1>Игра "Змейка"</h1>
 	<p>Управление: стрелки ⬆️, ⬇️, ⬅️, ➡️</p>
+	<p>Пауза: P / З</p>
 	<p id="score" class="score-item">Счет: 0, скорость: 150</p>
 	<p id="record" class="record-item">Рекорд: 0</p>
 
@@ -53,7 +54,8 @@
 	const ctx = canvas.getContext('2d');
 
 	const gridSize = 20;
-	let snake, direction, food, score, gameSpeed;
+	let snake, direction, food, score, gameSpeed, gameRunning;
+	let isPaused = false;
     
 	const startGame = () => {
 		snake = [{
@@ -68,6 +70,7 @@
 		food = getRandomFoodPosition(); // food = { x, y }
 		score = 0;
 		gameSpeed = 150;
+		gameRunning = true;
 
 		scoreItem.textContent = `Счет: 0, скорость: ${gameSpeed}`;
 		startButton.style.display = 'none';
@@ -84,6 +87,7 @@
 	}
 
 	function gameOver() {
+		gameRunning = false;
 		console.log(`Игра окончена, Ваш счет: ${score}.`);
 		startButton.style.display = 'initial';
 
@@ -95,6 +99,22 @@
 
 	const gameLoop = () => {
 		ctx.clearRect(0,0, canvas.width, canvas.height);
+
+		// if the game is paused, do not continue the loop
+		if (isPaused) {
+		    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+		    ctx.fillRect(0, 0, canvas.width, canvas.height);
+		    ctx.fillStyle = '#fff';
+		    ctx.font = '30px Arial';
+		    ctx.textAlign = 'center';
+		    ctx.fillText('ПАУЗА', canvas.width / 2, canvas.height / 2);
+		    ctx.font = '20px Arial';
+		    ctx.fillText('P / З — продолжить', canvas.width / 2, canvas.height / 2 + 30);
+		    ctx.fillText('или нажмите любую стрелку', canvas.width / 2, canvas.height / 2 + 50);
+		    ctx.fillText('⬆️, ⬇️, ⬅️, ➡️', canvas.width / 2, canvas.height / 2 + 75);
+		    return;
+		}
+
 
 		// apple
 		ctx.fillStyle = '#f00';
@@ -149,11 +169,37 @@
 
 	const changeDirection = (event) => {
 		const key = event.key;
+		const code = event.code;
+
+		// pause: P or Z - the same physical key
+		if (code === 'KeyP' || code === 'KeyR') {
+			event.preventDefault();
+			isPaused = !isPaused;
+			console.log(isPaused ? 'Игра на паузе' : 'Игра возобновлена (P)');
+
+			if (!isPaused) {
+				gameLoop();
+			}
+			return;
+		}
+
+		// if the game is paused, any arrow key press will unpause the game
+		if (isPaused) {
+			if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight') {
+				isPaused = false;
+				console.log('Игра возобновлена стрелкой');
+				gameLoop(); // let's resume the game
+			}
+			else {
+				return;
+			}
+		}
 
 		if (key === 'ArrowUp' && direction !== 'DOWN')         direction = 'UP';
 		else if (key === 'ArrowDown' && direction !== 'UP')    direction = 'DOWN';
 		else if (key === 'ArrowLeft' && direction !== 'RIGHT') direction = 'LEFT'; 
 		else if (key === 'ArrowRight' && direction !== 'LEFT') direction = 'RIGHT';
+
 	};
 
 	document.addEventListener('keydown', changeDirection);
