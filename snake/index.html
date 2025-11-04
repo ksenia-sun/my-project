@@ -33,6 +33,7 @@
 	<h1>Игра "Змейка"</h1>
 	<p>Управление: стрелки ⬆️, ⬇️, ⬅️, ➡️</p>
 	<p id="score" class="score-item">Счет: 0, скорость: 150</p>
+	<p id="record" class="record-item">Рекорд: 0</p>
 
 	<canvas id="canvas" class="canvas-container" width="400" height="400"></canvas>
 
@@ -42,6 +43,11 @@
 
 <script>
 	const scoreItem = document.querySelector('.score-item');
+	const recordItem = document.querySelector('.record-item');
+	let recordNum;
+	recordNum = JSON.parse(localStorage.getItem('record')) || 0;
+	recordItem.textContent = `Рекорд: ${recordNum}`;
+
 	const startButton = document.querySelector('.start-button');
 	const canvas = document.querySelector('.canvas-container');
 	const ctx = canvas.getContext('2d');
@@ -80,6 +86,11 @@
 	function gameOver() {
 		console.log(`Игра окончена, Ваш счет: ${score}.`);
 		startButton.style.display = 'initial';
+
+		if (score > recordNum) {
+			recordItem.textContent = `Рекорд: ${score}`;
+			localStorage.setItem('record', score);
+		}
 	}
 
 	const gameLoop = () => {
