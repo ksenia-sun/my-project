@@ -165,6 +165,26 @@
 		if (snake.length > 0) {
 			setTimeout(gameLoop, gameSpeed);
 		}
+
+
+		// draw the grid
+		ctx.lineWidth = 0.1;
+		ctx.strokeStyle = "grey"
+
+		// draw vertical lines
+		for (let x = 0; x < canvas.width; x += 20) {
+			ctx.beginPath();
+			ctx.moveTo(x, 0);
+			ctx.lineTo(x, canvas.height);
+			ctx.stroke();
+		}
+		// draw horizontal lines
+		for (let y = 0; y < canvas.height; y += 20) {
+			ctx.beginPath();
+			ctx.moveTo(0, y);
+			ctx.lineTo(canvas.width, y);
+			ctx.stroke();
+		}
 	};
 
 	const changeDirection = (event) => {
