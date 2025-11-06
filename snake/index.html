@@ -21,6 +21,18 @@
 			margin-top: 10px;
 			font-size: 20px;
 		}
+		.checkbox-item {
+			display: flex;
+			flex-direction: row;
+			flex-wrap: wrap;
+			justify-content: center;
+			text-align: left;
+			margin-bottom: 5px;
+			cursor: pointer;
+		}
+		.checkbox-item input {
+			margin-right: 5px;
+		}
 		.start-button {
 			margin-top: 20px;
 			padding: 10px 20px;
@@ -37,6 +49,11 @@
 	<p id="record" class="record-item">Рекорд: 0</p>
 
 	<canvas id="canvas" class="canvas-container" width="400" height="400"></canvas>
+
+	<div class="checkbox-item form-item">
+		<input type="checkbox">
+		<span>Включить подсветку пути</span>
+	</div>
 
 	<div>
 		<button class="start-button">Начать игру</button>
@@ -56,6 +73,22 @@
 	const gridSize = 20;
 	let snake, direction, food, score, gameSpeed, gameRunning;
 	let isPaused = false;
+
+	const checkboxItem = document.querySelector('.checkbox-item');
+	const checkbox = document.querySelector('input');
+	let isPathLighting = checkbox.checked ? true : false;
+
+	checkboxItem.addEventListener('click', e => {
+		const hasChecked = checkbox.checked;
+		checkbox.checked = !checkbox.checked;
+		checkbox.dispatchEvent(new Event('change'));
+		if (checkbox.checked === true) {
+			isPathLighting = true;
+		}
+		else {
+			isPathLighting = false;
+		}
+	});
     
 	const startGame = () => {
 		snake = [{
@@ -113,6 +146,20 @@
 		    ctx.fillText('или нажмите любую стрелку', canvas.width / 2, canvas.height / 2 + 50);
 		    ctx.fillText('⬆️, ⬇️, ⬅️, ➡️', canvas.width / 2, canvas.height / 2 + 75);
 		    return;
+		}
+
+
+		if (isPathLighting) {
+			// row highlighting depending on the direction
+			ctx.fillStyle = 'rgba(173, 216, 230, 0.3)';
+
+			if (direction === 'UP' || direction === 'DOWN') {
+				// vertical row
+				ctx.fillRect(snake[0].x, 0, gridSize, canvas.height);
+			} else if (direction === 'LEFT' || direction === 'RIGHT') {
+				// horizontal row
+				ctx.fillRect(0, snake[0].y, canvas.width, gridSize);
+			}
 		}
 
 
