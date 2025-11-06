@@ -1,276 +1,276 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Snake</title>
-	<style>
-		* {
-			margin: 0;
-			padding: 0;
-			box-sizing: border-box;
-		}
-		body {
-			text-align: center;
-			font-family: Arial, sans-serif;
-		}
-		.canvas-container {
-			border: 2px solid #000;
-		}
-		.score-item {
-			margin-top: 10px;
-			font-size: 20px;
-		}
-		.checkbox-item {
-			display: flex;
-			flex-direction: row;
-			flex-wrap: wrap;
-			justify-content: center;
-			text-align: left;
-			margin-bottom: 5px;
-			cursor: pointer;
-		}
-		.checkbox-item input {
-			margin-right: 5px;
-		}
-		.start-button {
-			margin-top: 20px;
-			padding: 10px 20px;
-			font-size: 16px;
-			cursor: pointer;
-		}
-	</style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Snake</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        .canvas-container {
+            border: 2px solid #000;
+        }
+        .score-item {
+            margin-top: 10px;
+            font-size: 20px;
+        }
+        .checkbox-item {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
+            text-align: left;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+        .checkbox-item input {
+            margin-right: 5px;
+        }
+        .start-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-	<h1>Игра "Змейка"</h1>
-	<p>Управление: стрелки ⬆️, ⬇️, ⬅️, ➡️</p>
-	<p>Пауза: P / З</p>
-	<p id="score" class="score-item">Счет: 0, скорость: 150</p>
-	<p id="record" class="record-item">Рекорд: 0</p>
+    <h1>Игра "Змейка"</h1>
+    <p>Управление: стрелки ⬆️, ⬇️, ⬅️, ➡️</p>
+    <p>Пауза: P / З</p>
+    <p id="score" class="score-item">Счет: 0, скорость: 150</p>
+    <p id="record" class="record-item">Рекорд: 0</p>
 
-	<canvas id="canvas" class="canvas-container" width="400" height="400"></canvas>
+    <canvas id="canvas" class="canvas-container" width="400" height="400"></canvas>
 
-	<div class="checkbox-item form-item">
-		<input type="checkbox">
-		<span>Включить подсветку пути</span>
-	</div>
+    <div class="checkbox-item form-item">
+        <input type="checkbox">
+        <span>Включить подсветку пути</span>
+    </div>
 
-	<div>
-		<button class="start-button">Начать игру</button>
-	</div>
+    <div>
+        <button class="start-button">Начать игру</button>
+    </div>
 
 <script>
-	const scoreItem = document.querySelector('.score-item');
-	const recordItem = document.querySelector('.record-item');
-	let recordNum;
-	recordNum = JSON.parse(localStorage.getItem('record')) || 0;
-	recordItem.textContent = `Рекорд: ${recordNum}`;
+    const scoreItem = document.querySelector('.score-item');
+    const recordItem = document.querySelector('.record-item');
+    let recordNum;
+    recordNum = JSON.parse(localStorage.getItem('record')) || 0;
+    recordItem.textContent = `Рекорд: ${recordNum}`;
 
-	const startButton = document.querySelector('.start-button');
-	const canvas = document.querySelector('.canvas-container');
-	const ctx = canvas.getContext('2d');
+    const startButton = document.querySelector('.start-button');
+    const canvas = document.querySelector('.canvas-container');
+    const ctx = canvas.getContext('2d');
 
-	const gridSize = 20;
-	let snake, direction, food, score, gameSpeed, gameRunning;
-	let isPaused = false;
+    const gridSize = 20;
+    let snake, direction, food, score, gameSpeed, gameRunning;
+    let isPaused = false;
 
-	const checkboxItem = document.querySelector('.checkbox-item');
-	const checkbox = document.querySelector('input');
-	let isPathLighting = checkbox.checked ? true : false;
+    const checkboxItem = document.querySelector('.checkbox-item');
+    const checkbox = document.querySelector('input');
+    let isPathLighting = checkbox.checked ? true : false;
 
-	checkboxItem.addEventListener('click', e => {
-		const hasChecked = checkbox.checked;
-		checkbox.checked = !checkbox.checked;
-		checkbox.dispatchEvent(new Event('change'));
-		if (checkbox.checked === true) {
-			isPathLighting = true;
-		}
-		else {
-			isPathLighting = false;
-		}
-	});
+    checkboxItem.addEventListener('click', e => {
+        const hasChecked = checkbox.checked;
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change'));
+        if (checkbox.checked === true) {
+            isPathLighting = true;
+        }
+        else {
+            isPathLighting = false;
+        }
+    });
     
-	const startGame = () => {
-		snake = [{
-			x: 200,
-			y: 200
-		}];
+    const startGame = () => {
+        snake = [{
+            x: 200,
+            y: 200
+        }];
 
-		// default: the snake moves to the right
-		direction = "RIGHT";
+        // default: the snake moves to the right
+        direction = "RIGHT";
 
-		// создание еды
-		food = getRandomFoodPosition(); // food = { x, y }
-		score = 0;
-		gameSpeed = 150;
-		gameRunning = true;
+        // создание еды
+        food = getRandomFoodPosition(); // food = { x, y }
+        score = 0;
+        gameSpeed = 150;
+        gameRunning = true;
 
-		scoreItem.textContent = `Счет: 0, скорость: ${gameSpeed}`;
-		startButton.style.display = 'none';
-
-
-		gameLoop();
-	};
-
-	function getRandomFoodPosition() {
-		return {
-			x: Math.floor(Math.random() * (canvas.width / gridSize)) * gridSize,
-			y: Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize,
-		}
-	}
-
-	function gameOver() {
-		gameRunning = false;
-		console.log(`Игра окончена, Ваш счет: ${score}.`);
-		startButton.style.display = 'initial';
-
-		if (score > recordNum) {
-			recordItem.textContent = `Рекорд: ${score}`;
-			localStorage.setItem('record', score);
-		}
-	}
-
-	const gameLoop = () => {
-		ctx.clearRect(0,0, canvas.width, canvas.height);
-
-		// if the game is paused, do not continue the loop
-		if (isPaused) {
-		    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-		    ctx.fillRect(0, 0, canvas.width, canvas.height);
-		    ctx.fillStyle = '#fff';
-		    ctx.font = '30px Arial';
-		    ctx.textAlign = 'center';
-		    ctx.fillText('ПАУЗА', canvas.width / 2, canvas.height / 2);
-		    ctx.font = '20px Arial';
-		    ctx.fillText('P / З — продолжить', canvas.width / 2, canvas.height / 2 + 30);
-		    ctx.fillText('или нажмите любую стрелку', canvas.width / 2, canvas.height / 2 + 50);
-		    ctx.fillText('⬆️, ⬇️, ⬅️, ➡️', canvas.width / 2, canvas.height / 2 + 75);
-		    return;
-		}
+        scoreItem.textContent = `Счет: 0, скорость: ${gameSpeed}`;
+        startButton.style.display = 'none';
 
 
-		if (isPathLighting) {
-			// row highlighting depending on the direction
-			ctx.fillStyle = 'rgba(173, 216, 230, 0.3)';
+        gameLoop();
+    };
 
-			if (direction === 'UP' || direction === 'DOWN') {
-				// vertical row
-				ctx.fillRect(snake[0].x, 0, gridSize, canvas.height);
-			} else if (direction === 'LEFT' || direction === 'RIGHT') {
-				// horizontal row
-				ctx.fillRect(0, snake[0].y, canvas.width, gridSize);
-			}
-		}
+    function getRandomFoodPosition() {
+        return {
+            x: Math.floor(Math.random() * (canvas.width / gridSize)) * gridSize,
+            y: Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize,
+        }
+    }
 
+    function gameOver() {
+        gameRunning = false;
+        console.log(`Игра окончена, Ваш счет: ${score}.`);
+        startButton.style.display = 'initial';
 
-		// apple
-		ctx.fillStyle = '#f00';
-		ctx.fillRect(food.x, food.y, gridSize, gridSize);
-		// head snake
-	    ctx.fillStyle = '#0f0';
-	    ctx.fillRect(snake[0].x, snake[0].y, gridSize, gridSize);
-		// body snake
-		ctx.fillStyle = '#f0f';
-		for (let i = 1; i < snake.length; i++) {
-	        ctx.fillRect(snake[i].x, snake[i].y, gridSize, gridSize);
-	    }
+        if (score > recordNum) {
+            recordItem.textContent = `Рекорд: ${score}`;
+            localStorage.setItem('record', score);
+        }
+    }
 
-		let head = { ...snake[0] };
-		if (direction === 'UP')    head.y -= gridSize;
-		if (direction === 'DOWN')  head.y += gridSize;
-		if (direction === 'LEFT')  head.x -= gridSize;
-		if (direction === 'RIGHT') head.x += gridSize;
+    const gameLoop = () => {
+        ctx.clearRect(0,0, canvas.width, canvas.height);
 
-		// if hit a wall - game over
-		if (head.x < 0 || head.x >= canvas.width ||
-			head.y < 0 || head.y >= canvas.height) {
-			gameOver();
-			return;
-		}
-		// if run into ourselves
-		for (let i = 1; i < snake.length; i++) {
-			if (head.x === snake[i].x && head.y === snake[i].y) {
-				gameOver();
-				return;
-			}
-		}
-
-		snake.unshift(head);
-
-		if (head.x === food.x && head.y === food.y) {
-			food = getRandomFoodPosition();
-			score += 1;
-
-			if (gameSpeed > 50) gameSpeed -= 5;
-
-			scoreItem.textContent = `Счет: ${score}, скорость: ${gameSpeed}`;
-		} else {
-			// delete tail
-			snake.pop();
-		}
-
-		if (snake.length > 0) {
-			setTimeout(gameLoop, gameSpeed);
-		}
+        // if the game is paused, do not continue the loop
+        if (isPaused) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff';
+            ctx.font = '30px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('ПАУЗА', canvas.width / 2, canvas.height / 2);
+            ctx.font = '20px Arial';
+            ctx.fillText('P / З — продолжить', canvas.width / 2, canvas.height / 2 + 30);
+            ctx.fillText('или нажмите любую стрелку', canvas.width / 2, canvas.height / 2 + 50);
+            ctx.fillText('⬆️, ⬇️, ⬅️, ➡️', canvas.width / 2, canvas.height / 2 + 75);
+            return;
+        }
 
 
-		// draw the grid
-		ctx.lineWidth = 0.1;
-		ctx.strokeStyle = "grey"
+        if (isPathLighting) {
+            // row highlighting depending on the direction
+            ctx.fillStyle = 'rgba(173, 216, 230, 0.3)';
 
-		// draw vertical lines
-		for (let x = 0; x < canvas.width; x += 20) {
-			ctx.beginPath();
-			ctx.moveTo(x, 0);
-			ctx.lineTo(x, canvas.height);
-			ctx.stroke();
-		}
-		// draw horizontal lines
-		for (let y = 0; y < canvas.height; y += 20) {
-			ctx.beginPath();
-			ctx.moveTo(0, y);
-			ctx.lineTo(canvas.width, y);
-			ctx.stroke();
-		}
-	};
+            if (direction === 'UP' || direction === 'DOWN') {
+                // vertical row
+                ctx.fillRect(snake[0].x, 0, gridSize, canvas.height);
+            } else if (direction === 'LEFT' || direction === 'RIGHT') {
+                // horizontal row
+                ctx.fillRect(0, snake[0].y, canvas.width, gridSize);
+            }
+        }
 
-	const changeDirection = (event) => {
-		const key = event.key;
-		const code = event.code;
 
-		// pause: P or Z - the same physical key
-		if (code === 'KeyP' || code === 'KeyR') {
-			event.preventDefault();
-			isPaused = !isPaused;
-			console.log(isPaused ? 'Игра на паузе' : 'Игра возобновлена (P)');
+        // apple
+        ctx.fillStyle = '#f00';
+        ctx.fillRect(food.x, food.y, gridSize, gridSize);
+        // head snake
+        ctx.fillStyle = '#0f0';
+        ctx.fillRect(snake[0].x, snake[0].y, gridSize, gridSize);
+        // body snake
+        ctx.fillStyle = '#f0f';
+        for (let i = 1; i < snake.length; i++) {
+            ctx.fillRect(snake[i].x, snake[i].y, gridSize, gridSize);
+        }
 
-			if (!isPaused) {
-				gameLoop();
-			}
-			return;
-		}
+        let head = { ...snake[0] };
+        if (direction === 'UP')    head.y -= gridSize;
+        if (direction === 'DOWN')  head.y += gridSize;
+        if (direction === 'LEFT')  head.x -= gridSize;
+        if (direction === 'RIGHT') head.x += gridSize;
 
-		// if the game is paused, any arrow key press will unpause the game
-		if (isPaused) {
-			if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight') {
-				isPaused = false;
-				console.log('Игра возобновлена стрелкой');
-				gameLoop(); // let's resume the game
-			}
-			else {
-				return;
-			}
-		}
+        // if hit a wall - game over
+        if (head.x < 0 || head.x >= canvas.width ||
+            head.y < 0 || head.y >= canvas.height) {
+            gameOver();
+            return;
+        }
+        // if run into ourselves
+        for (let i = 1; i < snake.length; i++) {
+            if (head.x === snake[i].x && head.y === snake[i].y) {
+                gameOver();
+                return;
+            }
+        }
 
-		if (key === 'ArrowUp' && direction !== 'DOWN')         direction = 'UP';
-		else if (key === 'ArrowDown' && direction !== 'UP')    direction = 'DOWN';
-		else if (key === 'ArrowLeft' && direction !== 'RIGHT') direction = 'LEFT'; 
-		else if (key === 'ArrowRight' && direction !== 'LEFT') direction = 'RIGHT';
+        snake.unshift(head);
 
-	};
+        if (head.x === food.x && head.y === food.y) {
+            food = getRandomFoodPosition();
+            score += 1;
 
-	document.addEventListener('keydown', changeDirection);
-	startButton.addEventListener('click', startGame);
+            if (gameSpeed > 50) gameSpeed -= 5;
+
+            scoreItem.textContent = `Счет: ${score}, скорость: ${gameSpeed}`;
+        } else {
+            // delete tail
+            snake.pop();
+        }
+
+        if (snake.length > 0) {
+            setTimeout(gameLoop, gameSpeed);
+        }
+
+
+        // draw the grid
+        ctx.lineWidth = 0.1;
+        ctx.strokeStyle = "grey"
+
+        // draw vertical lines
+        for (let x = 0; x < canvas.width; x += 20) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+            ctx.stroke();
+        }
+        // draw horizontal lines
+        for (let y = 0; y < canvas.height; y += 20) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+        }
+    };
+
+    const changeDirection = (event) => {
+        const key = event.key;
+        const code = event.code;
+
+        // pause: P or Z - the same physical key
+        if (code === 'KeyP' || code === 'KeyR') {
+            event.preventDefault();
+            isPaused = !isPaused;
+            console.log(isPaused ? 'Игра на паузе' : 'Игра возобновлена (P)');
+
+            if (!isPaused) {
+                gameLoop();
+            }
+            return;
+        }
+
+        // if the game is paused, any arrow key press will unpause the game
+        if (isPaused) {
+            if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight') {
+                isPaused = false;
+                console.log('Игра возобновлена стрелкой');
+                gameLoop(); // let's resume the game
+            }
+            else {
+                return;
+            }
+        }
+
+        if (key === 'ArrowUp' && direction !== 'DOWN')         direction = 'UP';
+        else if (key === 'ArrowDown' && direction !== 'UP')    direction = 'DOWN';
+        else if (key === 'ArrowLeft' && direction !== 'RIGHT') direction = 'LEFT'; 
+        else if (key === 'ArrowRight' && direction !== 'LEFT') direction = 'RIGHT';
+
+    };
+
+    document.addEventListener('keydown', changeDirection);
+    startButton.addEventListener('click', startGame);
 
 </script>
 
