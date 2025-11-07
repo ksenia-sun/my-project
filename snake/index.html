@@ -272,6 +272,77 @@
     document.addEventListener('keydown', changeDirection);
     startButton.addEventListener('click', startGame);
 
+    // === detecting swipe ===
+    // variables to track touch events
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    const minSwipeDistance = canvas.width / 13.5; // threshold for swipe
+    const maxTapTime = 300; // maximum time for tap (in milliseconds)
+    const maxTapDistance = 10; // maximum movement for tap (in pixels)
+
+    // touch start handler
+    canvas.addEventListener('touchstart', (event) => {
+        event.preventDefault(); // prevent page scrolling
+        const touch = event.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        touchStartTime = Date.now(); // remember the start time of the touch
+    });
+
+    // touch end handler
+    canvas.addEventListener('touchend', (event) => {
+        event.preventDefault();
+        if (!gameRunning) return; // if the game is not running, do nothing
+
+        const touchEndTime = Date.now();
+        const touchDuration = touchEndTime - touchStartTime;
+        const touch = event.changedTouches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+
+        // check if it's a tap
+        if (
+            touchDuration < maxTapTime &&
+            Math.abs(deltaX) < maxTapDistance &&
+            Math.abs(deltaY) < maxTapDistance
+        ) {
+            isPaused = !isPaused; // toggle pause
+            console.log(isPaused ? 'Игра на паузе (тап)' : 'Игра возобновлена (тап)');
+            if (!isPaused) {
+                gameLoop(); // Resume the game if the pause is lifted
+            }
+            return;
+        }
+
+        // check if the movement is large enough for a swipe
+        if (Math.abs(deltaX) > minSwipeDistance || Math.abs(deltaY) > minSwipeDistance) {
+            console.log('swipe');
+            // if the game is paused, any swipe resumes the game
+            if (isPaused) {
+                isPaused = false;
+                console.log('Игра возобновлена свайпом');
+                gameLoop();
+            }
+            // determine the swipe direction
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                // horizontal swipe
+                if (deltaX > 0 && direction !== 'LEFT') {
+                    direction = 'RIGHT';
+                } else if (deltaX < 0 && direction !== 'RIGHT') {
+                    direction = 'LEFT';
+                }
+            } else {
+                // vertical swipe
+                if (deltaY > 0 && direction !== 'UP') {
+                    direction = 'DOWN';
+                } else if (deltaY < 0 && direction !== 'DOWN') {
+                    direction = 'UP';
+                }
+            }
+        }
+    });
+
 </script>
 
 </body>
