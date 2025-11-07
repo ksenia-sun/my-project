@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover"> -->
     <title>Snake</title>
     <style>
         * {
@@ -14,8 +15,14 @@
             text-align: center;
             font-family: Arial, sans-serif;
         }
+        .content-container {
+            padding: 20px;
+        }
         .canvas-container {
             border: 2px solid #000;
+            /*width: 100%;*/
+            /*max-width: 400px;
+            height: auto;*/
         }
         .score-item {
             margin-top: 10px;
@@ -39,27 +46,53 @@
             font-size: 16px;
             cursor: pointer;
         }
+
+        .control-tips-mobile {
+            display: none;
+        }
+
+        .is-web {
+            display: block;
+        }
+        .is-mobile {
+            display: none;
+        }
+
+        @media screen and (max-device-width: 768px) {
+            .is-web {
+                display: none;
+            }
+            .is-mobile {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>Игра "Змейка"</h1>
-    <p>Управление: стрелки ⬆️, ⬇️, ⬅️, ➡️</p>
-    <p>Пауза: P / З</p>
-    <p id="score" class="score-item">Счет: 0, скорость: 150</p>
-    <p id="record" class="record-item">Рекорд: 0</p>
+    <div class="content-container">
+        <h1>Игра "Змейка"</h1>
+        <p class="control-tips is-web">Управление: стрелки ⬆️, ⬇️, ⬅️, ➡️</p>
+        <p class="control-tips is-web">Пауза: P / З</p>
+        <p class="control-tips is-mobile">Управление: swipe ⬆️, ⬇️, ⬅️, ➡️</p>
+        <p class="control-tips is-mobile">Пауза: single short tap</p>
+        <p id="score" class="score-item">Счет: 0, скорость: 150</p>
+        <p id="record" class="record-item">Рекорд: 0</p>
 
-    <canvas id="canvas" class="canvas-container" width="400" height="400"></canvas>
+        <canvas id="canvas" class="canvas-container"></canvas>
+        <div class="consolelog"></div>
 
-    <div class="checkbox-item form-item">
-        <input type="checkbox">
-        <span>Включить подсветку пути</span>
-    </div>
+        <div class="checkbox-item form-item">
+            <input type="checkbox">
+            <span>Включить подсветку пути</span>
+        </div>
 
-    <div>
-        <button class="start-button">Начать игру</button>
+        <div>
+            <button class="start-button">Начать игру</button>
+        </div>
     </div>
 
 <script>
+    const contentContainer = document.querySelector('.content-container');
     const scoreItem = document.querySelector('.score-item');
     const recordItem = document.querySelector('.record-item');
     let recordNum;
@@ -70,6 +103,7 @@
     const canvas = document.querySelector('.canvas-container');
     const ctx = canvas.getContext('2d');
 
+    // let gridSize = 20;
     const gridSize = 20;
     let snake, direction, food, score, gameSpeed, gameRunning;
     let isPaused = false;
@@ -204,6 +238,10 @@
             if (gameSpeed > 50) gameSpeed -= 5;
 
             scoreItem.textContent = `Счет: ${score}, скорость: ${gameSpeed}`;
+
+            if ('vibrate' in navigator) {
+                navigator.vibrate(100);
+            }
         } else {
             // delete tail
             snake.pop();
@@ -342,6 +380,60 @@
             }
         }
     });
+
+
+    // adaptation to screen size
+    const resizeCanvas = () => {
+        // maximum and minimum canvas width
+        const maxWidth = 400; // maximum canvas size
+        const minWidth = 200; // minimum size for gameplay convenience
+
+        // considering the screen width and height, choose the smaller value
+        // get the width including padding but excluding border/margin
+        const widthWithPadding = contentContainer.getBoundingClientRect().width;
+        // get the computed styles to find padding values
+        const computedStyle = getComputedStyle(contentContainer);
+        const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+        const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
+        // calculate the content width without padding
+        const contentWidth = widthWithPadding - paddingLeft - paddingRight;
+        const availableWidth = Math.min(contentWidth, window.innerHeight);
+
+        // limit the canvas width
+        let newWidth = Math.min(availableWidth, maxWidth);
+        newWidth = Math.max(newWidth, minWidth);
+
+        // round the width to a multiple of gridSize to make the field whole
+        canvas.width = Math.floor(newWidth / gridSize) * gridSize;
+        canvas.height = canvas.width; // keep the field square
+
+        // recalculate the snake and food positions if the game is running
+        if (gameRunning && snake && food) {
+            snake = snake.map(segment => ({
+                x: Math.min(Math.floor(segment.x / gridSize) * gridSize, canvas.width - gridSize),
+                y: Math.min(Math.floor(segment.y / gridSize) * gridSize, canvas.height - gridSize)
+            }));
+
+            food.x = Math.min(Math.floor(food.x / gridSize) * gridSize, canvas.width - gridSize);
+            food.y = Math.min(Math.floor(food.y / gridSize) * gridSize, canvas.height - gridSize);
+        }
+    };
+
+    // debouncing for resize and orientationchange events
+    let resizeTimeout;
+    const debounceResize = () => {
+        if (window.innerWidth < 500) {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(resizeCanvas, 100);
+        }
+    };
+
+    // event handlers
+    window.addEventListener('resize', debounceResize);
+    window.addEventListener('orientationchange', debounceResize);
+
+    // call on initial load
+    resizeCanvas();
 
 </script>
 
