@@ -145,11 +145,23 @@
         animationID = requestAnimationFrame(gameLoop);
     };
 
+    // if there is no snake, create food
+    function isPositionOnSnake(position) {
+        return snake.some(segment => {
+            return segment.x === position.x && segment.y === position.y;
+        });
+    }
     function getRandomFoodPosition() {
-        return {
-            x: Math.floor(Math.random() * (canvas.width / gridSize)) * gridSize,
-            y: Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize,
-        }
+        let newFoodPosition;
+
+        do {
+            newFoodPosition = {
+                x: Math.floor(Math.random() * (canvas.width / gridSize)) * gridSize,
+                y: Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize,
+            }
+        } while (isPositionOnSnake(newFoodPosition));
+
+        return newFoodPosition;
     }
 
     function gameOver() {
