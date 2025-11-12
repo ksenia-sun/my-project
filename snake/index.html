@@ -91,17 +91,18 @@
     </div>
 
 <script>
+    // --- Initialization and DOM elements ---
     const contentContainer = document.querySelector('.content-container');
     const scoreItem = document.querySelector('.score-item');
     const recordItem = document.querySelector('.record-item');
-    let recordNum;
-    recordNum = JSON.parse(localStorage.getItem('record')) || 0;
+    let recordNum = JSON.parse(localStorage.getItem('record')) || 0;
     recordItem.textContent = `Рекорд: ${recordNum}`;
 
     const startButton = document.querySelector('.start-button');
     const canvas = document.querySelector('.canvas-container');
     const ctx = canvas.getContext('2d');
 
+    // --- Constants and global state ---
     const gridSize = 20;
     let snake, direction, food, score, gameSpeed, gameRunning;
     let isPaused = false;
@@ -109,6 +110,7 @@
     let lastFrameTime = 0; // last update time (for tracking delay)
     let animationID = null; // identifier for canceling rAF
 
+    // UI settings
     const checkboxItem = document.querySelector('.checkbox-item');
     const checkbox = document.querySelector('input');
     let isPathLighting = checkbox.checked ? true : false;
@@ -118,12 +120,31 @@
         isPathLighting = checkbox.checked;
     });
 
-    function getGridCenter() {
+    // --- Utilities ---
+    // Canvas / UI
+    // clear the screen to redraw the pause state
+    const clearCanvas = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    const getGridCenter = () => {
         const centerX = Math.floor((canvas.width - gridSize) / 2 / gridSize) * gridSize;
         const centerY = Math.floor((canvas.height - gridSize) / 2 / gridSize) * gridSize;
         return { x: centerX, y: centerY };
     }
-    
+
+    // Position check
+    // if there is no snake, create food
+    const isPositionOnSnake = (position) => {
+        return snake.some(segment => {
+            return segment.x === position.x && segment.y === position.y;
+        });
+    }
+
+
+    // --- Game Core Logic & State Management ---
+
+    // Game state management
+    // initializes all variables and starts the loop
     const startGame = () => {
         snake = [{ ...getGridCenter() }];
 
@@ -145,13 +166,51 @@
         animationID = requestAnimationFrame(gameLoop);
     };
 
-    // if there is no snake, create food
-    function isPositionOnSnake(position) {
-        return snake.some(segment => {
-            return segment.x === position.x && segment.y === position.y;
-        });
+    // ends the game, saves the record
+    const gameOver = () => {
+        gameRunning = false;
+        console.log(`Игра окончена, Ваш счет: ${score}.`);
+        cancelAnimationFrame(animationID); // explicitly stop the loop
+        startButton.style.display = 'initial';
+
+        if (score > recordNum) {
+            recordItem.textContent = `Рекорд: ${score}`;
+            localStorage.setItem('record', score);
+        }
     }
-    function getRandomFoodPosition() {
+
+    // toggles the pause state
+    const pause = () => {
+        isPaused = !isPaused;
+        console.log(isPaused ? 'Игра на паузе' : 'Игра возобновлена');
+
+        if (!isPaused) {
+            // do nothing — raf is already running and will continue by itself
+            // update time to avoid a sharp jump after unpausing
+            lastFrameTime = performance.now();
+            clearCanvas();
+        }
+        return;
+    }
+
+    // updates score, speed, creates new food
+    // if the snake ate an apple
+    const handleFoodEaten = () => {
+        food = getRandomFoodPosition();
+        score += 1;
+
+        if (gameSpeed > 50) gameSpeed -= 5;
+
+        scoreItem.textContent = `Счет: ${score}, скорость: ${gameSpeed}`;
+
+        if ('vibrate' in navigator) {
+            navigator.vibrate(100);
+        }
+    }
+
+    // Positioning
+    // finds a random free position
+    const getRandomFoodPosition = () => {
         let newFoodPosition;
 
         do {
@@ -164,18 +223,139 @@
         return newFoodPosition;
     }
 
-    function gameOver() {
-        gameRunning = false;
-        console.log(`Игра окончена, Ваш счет: ${score}.`);
-        cancelAnimationFrame(animationID); // explicitly stop the loop
-        startButton.style.display = 'initial';
+    // Movement and collisions
+    // updating the game state
+    const calculateNextHeadPosition = () => {
+        const head = { ...snake[0] };
+        if (direction === 'UP')    head.y -= gridSize;
+        if (direction === 'DOWN')  head.y += gridSize;
+        if (direction === 'LEFT')  head.x -= gridSize;
+        if (direction === 'RIGHT') head.x += gridSize;
 
-        if (score > recordNum) {
-            recordItem.textContent = `Рекорд: ${score}`;
-            localStorage.setItem('record', score);
+        return head;
+    }
+    // if hit a wall
+    const checkWallCollision = (head) => {
+        return (
+            head.x < 0 || head.x >= canvas.width ||
+            head.y < 0 || head.y >= canvas.height
+        );
+    }
+    // if run into ourselves
+    const checkSelfCollision = (head) => {
+        for (let i = 1; i < snake.length; i++) {
+            if (head.x === snake[i].x && head.y === snake[i].y) {
+                return true;
+            }
+        }
+        return false;
+    }
+    const checkFoodCollision = (head) => {
+        return head.x === food.x && head.y === food.y;
+    }
+
+    // Main update
+    const updateGame = () => {
+        const head = calculateNextHeadPosition();
+
+        // if hit a wall and run into ourselves - game over
+        if (checkWallCollision(head) || checkSelfCollision(head)) {
+            gameOver();
+            // gameRunning will be set to false, and we'll exit at the start of the next frame
+            animationID = requestAnimationFrame(gameLoop); // important: request the next frame so the exit can trigger!
+            return;
+        }
+
+        // move snake
+        snake.unshift(head);
+
+        if (checkFoodCollision(head)) {
+            handleFoodEaten();
+        } else {
+            // delete tail
+            snake.pop();
         }
     }
 
+
+    // --- Rendering ---
+    const drawPauseScreen = () => {
+        clearCanvas();
+
+        // logic for displaying "pause"
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.font = '30px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('ПАУЗА', canvas.width / 2, canvas.height / 2);
+        ctx.font = '20px Arial';
+        ctx.fillText('Space / пробел — продолжить', canvas.width / 2, canvas.height / 2 + 30);
+        ctx.fillText('или нажмите любую стрелку', canvas.width / 2, canvas.height / 2 + 50);
+        ctx.fillText('⬆️, ⬇️, ⬅️, ➡️', canvas.width / 2, canvas.height / 2 + 75);
+    }
+
+    const drawFood = () => {
+        ctx.fillStyle = '#f00';
+        ctx.fillRect(food.x, food.y, gridSize, gridSize);
+    }
+
+    const drawSnake = () => {
+        ctx.fillStyle = '#0f0';
+        ctx.fillRect(snake[0].x, snake[0].y, gridSize, gridSize);
+        // body snake
+        ctx.fillStyle = '#f0f';
+        for (let i = 1; i < snake.length; i++) {
+            ctx.fillRect(snake[i].x, snake[i].y, gridSize, gridSize);
+        }
+    }
+
+    const drawGrid = () => {
+        ctx.lineWidth = 0.1;
+        ctx.strokeStyle = "grey"
+
+        // draw vertical lines
+        for (let x = 0; x < canvas.width; x += 20) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+            ctx.stroke();
+        }
+        // draw horizontal lines
+        for (let y = 0; y < canvas.height; y += 20) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+        }
+    }
+
+    const drawPathHighlight = () => {
+        ctx.fillStyle = 'rgba(173, 216, 230, 0.3)';
+
+        if (direction === 'UP' || direction === 'DOWN') {
+            // vertical row
+            ctx.fillRect(snake[0].x, 0, gridSize, canvas.height);
+        } else if (direction === 'LEFT' || direction === 'RIGHT') {
+            // horizontal row
+            ctx.fillRect(0, snake[0].y, canvas.width, gridSize);
+        }
+    }
+
+    const drawGame = () => {
+        clearCanvas();
+
+        if (isPathLighting) {
+            drawPathHighlight();
+        }
+
+        drawGrid();
+        drawFood();
+        drawSnake();
+    }
+
+
+    // --- Game loop & input handlers ---
     const gameLoop = (timestamp) => {
         // check if the game is running; if not, exit
         if (!gameRunning) {
@@ -186,19 +366,7 @@
         // if the game is paused, do not continue the loop
         // and just request the next frame without updating logic
         if (isPaused) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // clear the screen to redraw the pause state
-
-            // logic for displaying "pause"
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#fff';
-            ctx.font = '30px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('ПАУЗА', canvas.width / 2, canvas.height / 2);
-            ctx.font = '20px Arial';
-            ctx.fillText('Space / пробел — продолжить', canvas.width / 2, canvas.height / 2 + 30);
-            ctx.fillText('или нажмите любую стрелку', canvas.width / 2, canvas.height / 2 + 50);
-            ctx.fillText('⬆️, ⬇️, ⬅️, ➡️', canvas.width / 2, canvas.height / 2 + 75);
+            drawPauseScreen();
 
             // request the next frame
             animationID = requestAnimationFrame(gameLoop);
@@ -212,93 +380,10 @@
         if (deltaTime >= gameSpeed) {
             lastFrameTime = timestamp - (deltaTime % gameSpeed); // adjustment for accuracy
 
-            ctx.clearRect(0,0, canvas.width, canvas.height);
+            updateGame();
 
-            if (isPathLighting) {
-                // row highlighting depending on the direction
-                ctx.fillStyle = 'rgba(173, 216, 230, 0.3)';
-
-                if (direction === 'UP' || direction === 'DOWN') {
-                    // vertical row
-                    ctx.fillRect(snake[0].x, 0, gridSize, canvas.height);
-                } else if (direction === 'LEFT' || direction === 'RIGHT') {
-                    // horizontal row
-                    ctx.fillRect(0, snake[0].y, canvas.width, gridSize);
-                }
-            }
-
-
-            // apple
-            ctx.fillStyle = '#f00';
-            ctx.fillRect(food.x, food.y, gridSize, gridSize);
-            // head snake
-            ctx.fillStyle = '#0f0';
-            ctx.fillRect(snake[0].x, snake[0].y, gridSize, gridSize);
-            // body snake
-            ctx.fillStyle = '#f0f';
-            for (let i = 1; i < snake.length; i++) {
-                ctx.fillRect(snake[i].x, snake[i].y, gridSize, gridSize);
-            }
-
-            let head = { ...snake[0] };
-            if (direction === 'UP')    head.y -= gridSize;
-            if (direction === 'DOWN')  head.y += gridSize;
-            if (direction === 'LEFT')  head.x -= gridSize;
-            if (direction === 'RIGHT') head.x += gridSize;
-
-            // if hit a wall - game over
-            if (head.x < 0 || head.x >= canvas.width ||
-                head.y < 0 || head.y >= canvas.height) {
-                gameOver();
-                // gameRunning will be set to false, and we'll exit at the start of the next frame
-                animationID = requestAnimationFrame(gameLoop); // important: request the next frame so the exit can trigger!
-                return;
-            }
-            // if run into ourselves
-            for (let i = 1; i < snake.length; i++) {
-                if (head.x === snake[i].x && head.y === snake[i].y) {
-                    gameOver();
-                    // gamerunning will be set to false, and we'll exit at the start of the next frame
-                    animationID = requestAnimationFrame(gameLoop); // important: request the next frame so the exit can trigger!
-                    return;
-                }
-            }
-
-            snake.unshift(head);
-
-            if (head.x === food.x && head.y === food.y) {
-                food = getRandomFoodPosition();
-                score += 1;
-
-                if (gameSpeed > 50) gameSpeed -= 5;
-
-                scoreItem.textContent = `Счет: ${score}, скорость: ${gameSpeed}`;
-
-                if ('vibrate' in navigator) {
-                    navigator.vibrate(100);
-                }
-            } else {
-                // delete tail
-                snake.pop();
-            }
-
-            // draw the grid
-            ctx.lineWidth = 0.1;
-            ctx.strokeStyle = "grey"
-
-            // draw vertical lines
-            for (let x = 0; x < canvas.width; x += 20) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
-                ctx.stroke();
-            }
-            // draw horizontal lines
-            for (let y = 0; y < canvas.height; y += 20) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
+            if (gameRunning) {
+                drawGame();
             }
         }
 
@@ -306,54 +391,82 @@
         animationID = requestAnimationFrame(gameLoop);
     };
 
-    const changeDirection = (event) => {
-        const key = event.key;
+    // game controls
+    const tryChangeDirection = (newDirection) => {
+        if (!gameRunning) return; // if game isn't running
+
+        // if the game is paused, any arrow key press will unpause the game
+        if (isPaused) {
+            if (['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(newDirection)) {
+                isPaused = false;
+                console.log(`Игра возобновлена: ${newDirection}`);
+                lastFrameTime = performance.now(); // Обновление времени
+            }
+        }
+
+        // rules for changing direction
+        if (newDirection === 'UP' && direction !== 'DOWN') {
+            direction = 'UP';
+        } else if (newDirection === 'DOWN' && direction !== 'UP') {
+            direction = 'DOWN';
+        } else if (newDirection === 'LEFT' && direction !== 'RIGHT') {
+            direction = 'LEFT';
+        } else if (newDirection === 'RIGHT' && direction !== 'LEFT') {
+            direction = 'RIGHT';
+        }
+    };
+
+    // input handling (keyboard)
+    const handleKeyDirection = (key) => {
+        switch (key) {
+            case 'ArrowUp':
+                tryChangeDirection('UP');
+                break;
+            case 'ArrowDown':
+                tryChangeDirection('DOWN');
+                break;
+            case 'ArrowLeft':
+                tryChangeDirection('LEFT');
+                break;
+            case 'ArrowRight':
+                tryChangeDirection('RIGHT');
+                break;
+        }
+    };
+    const handleKeyboardInput = (event) => {
         const code = event.code;
 
         // pause: 'space' - the same physical key
         if (code === 'Space') {
             event.preventDefault();
-            isPaused = !isPaused;
-            console.log(isPaused ? 'Игра на паузе' : 'Игра возобновлена (P)');
-
-            if (!isPaused) {
-                // do nothing — raf is already running and will continue by itself
-                // update time to avoid a sharp jump after unpausing
-                lastFrameTime = performance.now();
-            }
+            pause();
             return;
         }
 
         // if the game is paused, any arrow key press will unpause the game
         if (isPaused) {
-            if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight') {
-                isPaused = false;
-                console.log('Игра возобновлена стрелкой');
-                lastFrameTime = performance.now(); // update time
+            if (code.startsWith('Arrow')) {
+                handleKeyDirection(event.key);
             }
-            else {
-                return;
-            }
+            return;
         }
 
-        if (key === 'ArrowUp' && direction !== 'DOWN')         direction = 'UP';
-        else if (key === 'ArrowDown' && direction !== 'UP')    direction = 'DOWN';
-        else if (key === 'ArrowLeft' && direction !== 'RIGHT') direction = 'LEFT'; 
-        else if (key === 'ArrowRight' && direction !== 'LEFT') direction = 'RIGHT';
-
+        // processing directions
+        handleKeyDirection(event.key);
     };
 
-    document.addEventListener('keydown', changeDirection);
+    document.addEventListener('keydown', handleKeyboardInput);
     startButton.addEventListener('click', startGame);
 
-    // === detecting swipe ===
+    // Input handling (Touch/Swipe)
     // variables to track touch events
     let touchStartX = 0;
     let touchStartY = 0;
     let touchStartTime = 0;
-    const minSwipeDistance = canvas.width / 13.5; // threshold for swipe
-    const maxTapTime = 300; // maximum time for tap (in milliseconds)
-    const maxTapDistance = 10; // maximum movement for tap (in pixels)
+    const SWIPE_GRID_THRESHOLD = 2; // minimum swipe distance in grid cells
+    const minSwipeDistance = gridSize * SWIPE_GRID_THRESHOLD; // threshold for swipe
+    const MAX_TAP_DURATION_MS = 300; // maximum time for tap (in milliseconds)
+    const maxTapDistance = 30; // maximum movement for tap (in pixels)
 
     // touch start handler
     canvas.addEventListener('touchstart', (event) => {
@@ -377,26 +490,18 @@
 
         // check if it's a tap
         if (
-            touchDuration < maxTapTime &&
+            touchDuration < MAX_TAP_DURATION_MS &&
             Math.abs(deltaX) < maxTapDistance &&
             Math.abs(deltaY) < maxTapDistance
         ) {
-            isPaused = !isPaused; // toggle pause
-            console.log(isPaused ? 'Игра на паузе (тап)' : 'Игра возобновлена (тап)');
-            if (!isPaused) {
-                lastFrameTime = performance.now(); // update time
-            }
+            pause();
             return;
         }
 
         // check if the movement is large enough for a swipe
         if (Math.abs(deltaX) > minSwipeDistance || Math.abs(deltaY) > minSwipeDistance) {
-            // if the game is paused, any swipe resumes the game
-            if (isPaused) {
-                isPaused = false;
-                console.log('Игра возобновлена свайпом');
-                lastFrameTime = performance.now(); // update time
-            }
+            let newDirection = null;
+
             // determine the swipe direction
             if (Math.abs(deltaX) > Math.abs(deltaY)) {
                 // horizontal swipe
@@ -413,10 +518,16 @@
                     direction = 'UP';
                 }
             }
+
+            // call the general function to change direction
+            if (newDirection) {
+                tryChangeDirection(newDirection);
+            }
         }
     });
 
 
+    // --- Device/Window management ---
     // adaptation to screen size
     const resizeCanvas = () => {
         // maximum and minimum canvas width
