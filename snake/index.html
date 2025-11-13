@@ -65,7 +65,7 @@
         .canvas-content {
             position: relative;
             border-radius: 10px;
-            box-shadow: 0 0 0 2px #ff00ff, 0 0 40px #ff00ff, 0 0 80px #00ffff;
+            box-shadow: 0 0 0 2px #f0f, 0 0 40px #f0f, 0 0 80px #00ffff;
             text-align: center;
             color: #fff;
             overflow: hidden;
@@ -100,7 +100,7 @@
             font-size: 34px;
             line-height: 1.2;
             margin-bottom: 15px;
-            color: #ffcc00;
+            color: #fc0;
             -webkit-text-stroke: 1px #fff;
             animation: blinkText 1.5s infinite alternate;
         }
@@ -180,6 +180,7 @@
             opacity: 0;
         }
 
+        /* toggle switch */
         .checkbox-item {
             position: relative;
             z-index: 1;
@@ -188,19 +189,64 @@
             flex-wrap: wrap;
             justify-content: center;
             text-align: left;
-            margin-bottom: 5px;
+            margin: 15px 0;
             cursor: pointer;
         }
-        .checkbox-item input {
-            margin-right: 5px;
+        .path-checkbox {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
         }
+        .checkbox-item label {
+            position: relative;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1.2;
+            color: #fff;
+        }
+        .checkbox-item label::before {
+            content: '';
+            width: 50px;
+            height: 25px;
+            border-radius: 15px;
+            background-color: #333;
+            margin-right: 15px;
+            position: relative;
+            transition: background-color 0.3s ease;
+            border: 2px solid #555;
+        }
+        .checkbox-item label::after {
+            content: '';
+            position: absolute;
+            left: 4px;
+            width: 17px;
+            height: 17px;
+            border-radius: 50%;
+            background-color: #fff;
+            box-shadow: 0 0 5px #fff;
+            transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .path-checkbox:checked + label::before {
+            background-color: #080;
+            border-color: #0f0;
+            box-shadow: 0 0 10px #0f0;
+        }
+        .path-checkbox:checked + label::after {
+            transform: translateX(25px);
+            background-color: #fc0;
+            box-shadow: 0 0 10px #0ff;
+        }
+
         .neon-btn {
             margin-top: 30px;
             padding: 15px 40px;
             font-size: 22px;
             font-weight: bold;
             color: #000;
-            background: linear-gradient(45deg, #ffff00, #ff00ff);
+            background: linear-gradient(45deg, #ff0, #f0f);
             border: none;
             border-radius: 50px;
             cursor: pointer;
@@ -270,10 +316,10 @@
         }
         @keyframes pulseGlow {
             from {
-                box-shadow: 0 0 0 2px #ff00ff, 0 0 40px #f0f, 0 0 80px #0ff, inset 0 0 40px rgba(255,0,255,0.3);
+                box-shadow: 0 0 0 2px #f0f, 0 0 40px #f0f, 0 0 80px #0ff, inset 0 0 40px rgba(255,0,255,0.3);
             }
             to {
-                box-shadow: 0 0 0 2px #ff00ff, 0 0 60px #f0f, 0 0 120px #0ff, inset 0 0 60px rgba(255,0,255,0.5);
+                box-shadow: 0 0 0 2px #f0f, 0 0 60px #f0f, 0 0 120px #0ff, inset 0 0 60px rgba(255,0,255,0.5);
             }
         }
         @keyframes neonFlicker {
@@ -444,8 +490,8 @@
         </div>
 
         <div class="checkbox-item form-item is-hidden">
-            <input type="checkbox" class="path-checkbox">
-            <span>Включить подсветку пути</span>
+            <input type="checkbox" class="path-checkbox" id="path-checkbox-id">
+            <label for="path-checkbox-id">Включить подсветку пути</label>
         </div>
     </div>
 
@@ -536,6 +582,13 @@
         return snake.some(segment => segment.x === position.x && segment.y === position.y);
     }
 
+    // set info for score block
+    const updateScoreUI = () => {
+        recordText.forEach(item => item.textContent = recordNum);
+        scoreText.forEach(item => item.textContent = score);
+        speedText.forEach(item => item.textContent = gameSpeed);
+    };
+
 
     // --- Game Core Logic & State Management ---
 
@@ -556,8 +609,7 @@
         lastFrameTime = 0; // initialize time
 
         // set info for score block
-        scoreText.forEach(item => item.textContent = score);
-        speedText.forEach(item => item.textContent = gameSpeed);
+        updateScoreUI();
 
         // change state
         setGameState(STATES.PLAYING);
@@ -570,9 +622,10 @@
     const gameOver = () => {
         // set new record
         if (score > recordNum) {
-            recordText.forEach(item => item.textContent = recordNum);
             recordNum = score;
             localStorage.setItem('record', score);
+
+            updateScoreUI();
         }
 
         // change state
@@ -609,8 +662,7 @@
         if (gameSpeed > 50) gameSpeed -= 5;
 
         // set info for score block
-        scoreText.forEach(item => item.textContent = score);
-        speedText.forEach(item => item.textContent = gameSpeed);
+        updateScoreUI();
 
         if ('vibrate' in navigator) {
             navigator.vibrate(100);
