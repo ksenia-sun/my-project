@@ -5,14 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Snake</title>
     <style>
+        :root {
+            /* main UI Colors */
+            --ui-bg-primary: #000;
+            --ui-bg-canvas-overlay: rgba(10, 0, 30, 0.85);
+            --ui-bg-blur-overlay: rgba(10, 0, 30, 0.75);
+            --ui-text-primary: #fff;
+            --ui-text-secondary: #ccc;
+            --ui-text-inverse: #000;
+
+            /* accents (neon) - universal */
+            --ui-accent-1: #f0f;
+            --ui-accent-1-rgb: 255, 0, 255;
+            --ui-accent-2: #0ff;
+            --ui-accent-3: #ff0;
+            --ui-accent-3-rgb: 255, 255, 0;
+
+            /* highlighting */
+            --ui-highlight: #fc0;
+
+            /* toggle */
+            --ui-toggle-bg-off: #333;
+            --ui-toggle-border-off: #555;
+            --ui-toggle-bg-on: #080;
+            --ui-toggle-border-on: #0f0;
+
+            /* game elements */
+            --game-snake-title: #2ecc71;
+            --game-snake-head: #0f0;
+            --game-snake-body: var(--ui-accent-1);
+            --game-food: #f00;
+            --game-grid: var(--ui-text-secondary);
+            --game-path-highlight: rgba(173, 216, 230, 0.1);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         body {
-            background-color: #000;
-            color: #ccc;
+            background-color: var(--ui-bg-primary);
+            color: var(--ui-text-secondary);
             font-family: 'Arial Black', Arial, sans-serif;
         }
         .content-container {
@@ -29,11 +63,11 @@
         }
         h1 span {
             position: relative;
-            background: linear-gradient(45deg, #0ff, #f0f, #ff0);
+            background: linear-gradient(45deg, var(--ui-accent-2), var(--ui-accent-1), var(--ui-accent-3));
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            -webkit-text-stroke: 1px #fff;
+            -webkit-text-stroke: 1px var(--ui-text-primary);
         }
         .snake {
             position: absolute;
@@ -50,11 +84,11 @@
             stroke-linecap: round;
         }
         .snake-path-outline {
-            stroke: white;
+            stroke: var(--ui-text-primary);
             stroke-width: 100;
         }
         .snake-path-main {
-            stroke: #2ecc71;
+            stroke: var(--game-snake-title);
             stroke-width: 80;
         }
 
@@ -65,16 +99,16 @@
         .canvas-content {
             position: relative;
             border-radius: 10px;
-            box-shadow: 0 0 0 2px #f0f, 0 0 40px #f0f, 0 0 80px #00ffff;
+            box-shadow: 0 0 0 2px var(--ui-accent-1), 0 0 40px var(--ui-accent-1), 0 0 80px var(--ui-accent-2);
             text-align: center;
-            color: #fff;
+            color: var(--ui-text-primary);
             overflow: hidden;
             animation: pulseGlow 4s infinite alternate;
         }
         .canvas-game {
             display: block;
-            background-color: rgba(10, 0, 30, 0.85);
-            box-shadow: inset 0 0 40px rgba(255,0,255,0.3);
+            background-color: var(--ui-bg-canvas-overlay);
+            box-shadow: inset 0 0 40px rgba(var(--ui-accent-1-rgb), 0.3);
         }
 
         .game-overlay-block {
@@ -86,7 +120,7 @@
             z-index: 9999;
             opacity: 1;
 
-            background-color: rgba(10, 0, 30, 0.75);
+            background-color: var(--ui-bg-blur-overlay);
             backdrop-filter: blur(5px);
             -webkit-backdrop-filter: blur(5px);
             transition: opacity 0.5s ease;
@@ -101,7 +135,7 @@
             line-height: 1.2;
             margin-bottom: 15px;
             color: #fc0;
-            -webkit-text-stroke: 1px #fff;
+            -webkit-text-stroke: 1px var(--ui-text-primary);
             animation: blinkText 1.5s infinite alternate;
         }
 
@@ -130,10 +164,10 @@
             font-weight: bold;
             text-align: center;
 
-            color: #fff;
+            color: var(--ui-text-primary);
             text-shadow:
-                0 0 7px rgba(255, 0, 255, 0.7),
-                0 0 15px rgba(255, 255, 0, 0.7);
+                0 0 7px rgba(var(--ui-accent-1-rgb), 0.7),
+                0 0 15px rgba(var(--ui-accent-3-rgb), 0.7);
             
             -webkit-font-smoothing: antialiased;
             animation: neonFlicker 0.3s infinite alternate;
@@ -163,8 +197,8 @@
         }
 
         .highlight {
-            color: #ff0;
-            text-shadow: 0 0 10px #ff0;
+            color: var(--ui-accent-3);
+            text-shadow: 0 0 10px var(--ui-accent-3);
         }
 
         .info-score-block {
@@ -205,18 +239,18 @@
             cursor: pointer;
             font-size: 16px;
             line-height: 1.2;
-            color: #fff;
+            color: var(--ui-text-primary);
         }
         .checkbox-item label::before {
             content: '';
             width: 50px;
             height: 25px;
             border-radius: 15px;
-            background-color: #333;
+            background-color: var(--ui-toggle-bg-off);
             margin-right: 15px;
             position: relative;
             transition: background-color 0.3s ease;
-            border: 2px solid #555;
+            border: 2px solid var(--ui-toggle-border-off);
         }
         .checkbox-item label::after {
             content: '';
@@ -225,19 +259,19 @@
             width: 17px;
             height: 17px;
             border-radius: 50%;
-            background-color: #fff;
-            box-shadow: 0 0 5px #fff;
+            background-color: var(--ui-text-primary);
+            box-shadow: 0 0 5px var(--ui-text-primary);
             transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
         }
         .path-checkbox:checked + label::before {
-            background-color: #080;
-            border-color: #0f0;
-            box-shadow: 0 0 10px #0f0;
+            background-color: var(--ui-toggle-bg-on);
+            border-color: var(--ui-toggle-border-on);
+            box-shadow: 0 0 10px var(--ui-toggle-border-on);
         }
         .path-checkbox:checked + label::after {
             transform: translateX(25px);
-            background-color: #fc0;
-            box-shadow: 0 0 10px #0ff;
+            background-color: var(--ui-highlight);
+            box-shadow: 0 0 10px var(--ui-accent-2);
         }
 
         .neon-btn {
@@ -245,19 +279,19 @@
             padding: 15px 40px;
             font-size: 22px;
             font-weight: bold;
-            color: #000;
-            background: linear-gradient(45deg, #ff0, #f0f);
+            color: var(--ui-text-inverse);
+            background: linear-gradient(45deg, var(--ui-accent-3), var(--ui-accent-1));
             border: none;
             border-radius: 50px;
             cursor: pointer;
-            box-shadow: 0 0 20px #ff0, 0 0 40px #f0f;
+            box-shadow: 0 0 20px var(--ui-accent-3), 0 0 40px var(--ui-accent-1);
             transition: all 0.3s;
             position: relative;
             overflow: hidden;
         }
         .neon-btn:hover {
             transform: scale(1.1);
-            box-shadow: 0 0 40px #ff0, 0 0 80px #f0f;
+            box-shadow: 0 0 40px var(--ui-accent-3), 0 0 80px var(--ui-accent-1);
         }
         .neon-btn:active {
             transform: scale(0.95);
@@ -316,33 +350,33 @@
         }
         @keyframes pulseGlow {
             from {
-                box-shadow: 0 0 0 2px #f0f, 0 0 40px #f0f, 0 0 80px #0ff, inset 0 0 40px rgba(255,0,255,0.3);
+                box-shadow: 0 0 0 2px var(--ui-accent-1), 0 0 40px var(--ui-accent-1), 0 0 80px var(--ui-accent-2), inset 0 0 40px rgba(var(--ui-accent-1-rgb), 0.3);
             }
             to {
-                box-shadow: 0 0 0 2px #f0f, 0 0 60px #f0f, 0 0 120px #0ff, inset 0 0 60px rgba(255,0,255,0.5);
+                box-shadow: 0 0 0 2px var(--ui-accent-1), 0 0 60px var(--ui-accent-1), 0 0 120px var(--ui-accent-2), inset 0 0 60px rgba(var(--ui-accent-1-rgb), 0.5);
             }
         }
         @keyframes neonFlicker {
             0% {
                 text-shadow:
-                    0 0 10px #fff,
-                    0 0 20px #ff0,
-                    0 0 40px #f0f,
-                    0 0 80px rgba(255, 0, 255, 0.8);
+                    0 0 10px var(--ui-text-primary),
+                    0 0 20px var(--ui-accent-3),
+                    0 0 40px var(--ui-accent-1),
+                    0 0 80px rgba(var(--ui-accent-1-rgb), 0.8);
             }
             50% {
                 text-shadow:
-                    0 0 8px #fff,
-                    0 0 15px #ff0,
-                    0 0 30px #f0f,
-                    0 0 60px rgba(255, 0, 255, 0.6);
+                    0 0 8px var(--ui-text-primary),
+                    0 0 15px var(--ui-accent-3),
+                    0 0 30px var(--ui-accent-1),
+                    0 0 60px rgba(var(--ui-accent-1-rgb), 0.6);
             }
             100% {
                 text-shadow:
-                    0 0 12px #fff,
-                    0 0 25px #ff0,
-                    0 0 50px #f0f,
-                    0 0 90px rgba(255, 0, 255, 0.9);
+                    0 0 12px var(--ui-text-primary),
+                    0 0 25px var(--ui-accent-3),
+                    0 0 50px var(--ui-accent-1),
+                    0 0 90px rgba(var(--ui-accent-1-rgb), 0.9);
             }
         }
         @keyframes fadeIn {
@@ -504,10 +538,25 @@
     const speedText = document.querySelectorAll('.speed-text');
     const canvas = document.querySelector('.canvas-game');
     const ctx = canvas.getContext('2d');
+    const root = document.documentElement;
 
     // --- Constants and global state ---
     const gridSize = 20;
     let snake, direction, food, score, gameSpeed;
+
+    // Object for storing colors used in canvas
+    const THEME = {};
+
+    // Function for reading CSS variables
+    const readThemeFromCSS = () => {
+        const style = getComputedStyle(root);
+
+        THEME.FOOD = style.getPropertyValue('--game-food').trim();
+        THEME.SNAKE_HEAD = style.getPropertyValue('--game-snake-head').trim();
+        THEME.SNAKE_BODY = style.getPropertyValue('--game-snake-body').trim();
+        THEME.GRID = style.getPropertyValue('--game-grid').trim();
+        THEME.PATH_HIGHLIGHT = style.getPropertyValue('--game-path-highlight').trim();
+    };
 
     // Game state enum
     const STATES = {
@@ -745,15 +794,15 @@
 
     // --- Rendering ---
     const drawFood = () => {
-        ctx.fillStyle = '#f00';
+        ctx.fillStyle = THEME.FOOD;
         ctx.fillRect(food.x, food.y, gridSize, gridSize);
     }
 
     const drawSnake = () => {
-        ctx.fillStyle = '#0f0';
+        ctx.fillStyle = THEME.SNAKE_HEAD;
         ctx.fillRect(snake[0].x, snake[0].y, gridSize, gridSize);
         // body snake
-        ctx.fillStyle = '#f0f';
+        ctx.fillStyle = THEME.SNAKE_BODY;
         for (let i = 1; i < snake.length; i++) {
             ctx.fillRect(snake[i].x, snake[i].y, gridSize, gridSize);
         }
@@ -761,7 +810,7 @@
 
     const drawGrid = () => {
         ctx.lineWidth = 0.2;
-        ctx.strokeStyle = '#ccc';
+        ctx.strokeStyle = THEME.GRID;
 
         // draw vertical lines
         for (let x = 0; x < canvas.width; x += 20) {
@@ -780,7 +829,7 @@
     }
 
     const drawPathHighlight = () => {
-        ctx.fillStyle = 'rgba(173, 216, 230, 0.1)';
+        ctx.fillStyle = THEME.PATH_HIGHLIGHT;
 
         if (direction === 'UP' || direction === 'DOWN') {
             // vertical row
@@ -1081,6 +1130,7 @@
     window.addEventListener('orientationchange', debounceResize);
 
     // call on initial load
+    readThemeFromCSS();
     resizeCanvas();
     setGameState(STATES.START)
 </script>
