@@ -3,7 +3,6 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover"> -->
     <title>Snake</title>
     <style>
         * {
@@ -12,23 +11,178 @@
             box-sizing: border-box;
         }
         body {
-            text-align: center;
-            font-family: Arial, sans-serif;
+            background-color: #000;
+            color: #ccc;
+            font-family: 'Arial Black', Arial, sans-serif;
         }
         .content-container {
             padding: 20px;
         }
-        .canvas-container {
-            border: 2px solid #000;
-            /*width: 100%;*/
-            /*max-width: 400px;
-            height: auto;*/
+        h1 {
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 56px;
+            line-height: 1.2;
         }
-        .score-item {
-            margin-top: 10px;
-            font-size: 20px;
+        .is-animate {
+            animation: titleWave 3s infinite;
         }
+        h1 span {
+            position: relative;
+            background: linear-gradient(45deg, #0ff, #f0f, #ff0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            -webkit-text-stroke: 1px #fff;
+        }
+        .snake {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            width: 60px;
+            height: 20px;
+            animation: snakeMove 7s linear infinite;
+            animation-direction: alternate;
+        }
+        .snake-path {
+            fill: none;
+            stroke-linecap: round;
+        }
+        .snake-path-outline {
+            stroke: white;
+            stroke-width: 100;
+        }
+        .snake-path-main {
+            stroke: #2ecc71;
+            stroke-width: 80;
+        }
+
+        .canvas-wrapper {
+            display: flex;
+            justify-content: center;
+        }
+        .canvas-content {
+            position: relative;
+            border-radius: 10px;
+            box-shadow: 0 0 0 2px #ff00ff, 0 0 40px #ff00ff, 0 0 80px #00ffff;
+            text-align: center;
+            color: #fff;
+            overflow: hidden;
+            animation: pulseGlow 4s infinite alternate;
+        }
+        .canvas-game {
+            display: block;
+            background-color: rgba(10, 0, 30, 0.85);
+            box-shadow: inset 0 0 40px rgba(255,0,255,0.3);
+        }
+
+        .game-overlay-block {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 9999;
+            opacity: 1;
+
+            background-color: rgba(10, 0, 30, 0.75);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            transition: opacity 0.5s ease;
+        }
+        .game-overlay-block[data-state="playing"] {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .game-overlay-block h2 {
+            position: relative;
+            font-size: 34px;
+            line-height: 1.2;
+            margin-bottom: 15px;
+            color: #ffcc00;
+            -webkit-text-stroke: 1px #fff;
+            animation: blinkText 1.5s infinite alternate;
+        }
+
+        /* --- screen display logic --- */
+        .game-screen {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            height: 100%;
+            padding: 20px;
+            text-align: center;
+        }
+        .game-overlay-block[data-state="start"] .game-screen[data-screen="start"] {
+            display: flex;
+        }
+        .game-overlay-block[data-state="pause"] .game-screen[data-screen="resume"] {
+            display: flex;
+        }
+        .game-overlay-block[data-state="gameover"] .game-screen[data-screen="end"] {
+            display: flex;
+        }
+
+        .neon-text {
+            font-size: 80px;
+            font-weight: bold;
+            text-align: center;
+
+            color: #fff;
+            text-shadow:
+                0 0 7px rgba(255, 0, 255, 0.7),
+                0 0 15px rgba(255, 255, 0, 0.7);
+            
+            -webkit-font-smoothing: antialiased;
+            animation: neonFlicker 0.3s infinite alternate;
+        }
+
+        .step-item {
+            display: none;
+            opacity: 0;
+            width: 100%;
+        }
+        .step-item.visible {
+            display: block;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .instruction-item {
+            display: grid;
+            grid-gap: 10px;
+            grid-template-columns: 1fr 1fr;
+            text-align: left;
+        }
+        .instruction-item span {
+            justify-self: end;
+        }
+        .step-item p:not(.instruction-item) {
+            margin: 10px 0;
+        }
+
+        .highlight {
+            color: #ff0;
+            text-shadow: 0 0 10px #ff0;
+        }
+
+        .info-score-block {
+            position: relative;
+            z-index: 1;
+            margin: 10px 0;
+            font-size: 16px;
+            text-align: center;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+        .info-score-block.is-hide {
+            opacity: 0;
+        }
+
         .checkbox-item {
+            position: relative;
+            z-index: 1;
             display: flex;
             flex-direction: row;
             flex-wrap: wrap;
@@ -40,6 +194,44 @@
         .checkbox-item input {
             margin-right: 5px;
         }
+        .neon-btn {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #000;
+            background: linear-gradient(45deg, #ffff00, #ff00ff);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 20px #ff0, 0 0 40px #f0f;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .neon-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 40px #ff0, 0 0 80px #f0f;
+        }
+        .neon-btn:active {
+            transform: scale(0.95);
+        }
+        .neon-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: translateX(-100%);
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transform: skew(-30deg);
+            animation: glare 3s infinite alternate;
+        }
+        .neon-btn:hover::before {
+            animation: none;
+        }
+
         .start-button {
             margin-top: 20px;
             padding: 10px 20px;
@@ -47,78 +239,284 @@
             cursor: pointer;
         }
 
-        .control-tips-mobile {
-            display: none;
-        }
-
         .is-web {
             display: block;
         }
-        .is-mobile {
+        .is-mob {
             display: none;
+        }
+
+        .is-hidden {
+            display: none;
+        }
+
+        /* animation styles  */
+        @keyframes titleWave {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+        @keyframes snakeMove {
+            0% {
+                transform: translateX(0) translateY(-50%);
+            }
+            100% {
+                left: 100%;
+                transform: translateX(-100%) translateY(-50%);
+            }
+        }
+        @keyframes pulseGlow {
+            from {
+                box-shadow: 0 0 0 2px #ff00ff, 0 0 40px #f0f, 0 0 80px #0ff, inset 0 0 40px rgba(255,0,255,0.3);
+            }
+            to {
+                box-shadow: 0 0 0 2px #ff00ff, 0 0 60px #f0f, 0 0 120px #0ff, inset 0 0 60px rgba(255,0,255,0.5);
+            }
+        }
+        @keyframes neonFlicker {
+            0% {
+                text-shadow:
+                    0 0 10px #fff,
+                    0 0 20px #ff0,
+                    0 0 40px #f0f,
+                    0 0 80px rgba(255, 0, 255, 0.8);
+            }
+            50% {
+                text-shadow:
+                    0 0 8px #fff,
+                    0 0 15px #ff0,
+                    0 0 30px #f0f,
+                    0 0 60px rgba(255, 0, 255, 0.6);
+            }
+            100% {
+                text-shadow:
+                    0 0 12px #fff,
+                    0 0 25px #ff0,
+                    0 0 50px #f0f,
+                    0 0 90px rgba(255, 0, 255, 0.9);
+            }
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        @keyframes glare {
+            from {
+                transform: translateX(-100%);
+            }
+            to {
+                transform: translateX(100%);
+            }
+        }
+        @keyframes blinkText {
+            from {
+                opacity: 0.7;
+                transform: scale(1);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1.05);
+            }
         }
 
         @media screen and (max-device-width: 768px) {
             .is-web {
                 display: none;
             }
-            .is-mobile {
+            .is-mob {
                 display: block;
+            }
+        }
+        @media screen and (max-device-width: 350px) {
+            .neon-btn {
+                font-size: 18px;
             }
         }
     </style>
 </head>
 <body>
     <div class="content-container">
-        <h1>Игра "Змейка"</h1>
-        <p class="control-tips is-web">Управление: стрелки ⬆️, ⬇️, ⬅️, ➡️</p>
-        <p class="control-tips is-web">Пауза: space / пробел</p>
-        <p class="control-tips is-mobile">Управление: swipe ⬆️, ⬇️, ⬅️, ➡️</p>
-        <p class="control-tips is-mobile">Пауза: single short tap</p>
-        <p id="score" class="score-item">Счет: 0, скорость: 150</p>
-        <p id="record" class="record-item">Рекорд: 0</p>
+        <h1 class="is-animate"><span>ЗМЕЙКА
+            <svg class="snake" width="400" height="200" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+              <!-- white path for outline (background) -->
+              <path class="snake-path snake-path-outline"
+                    d="M0,100 Q150,50 250,100 T450,100">
+                <animate attributeName="d"
+                         values="
+                           M0,100 Q150,50 250,100 T450,100;
+                           M0,100 Q150,150 250,100 T450,100;
+                           M0,100 Q150,50 250,100 T450,100"
+                         dur="1.5s"
+                         repeatCount="indefinite" />
+                <animate attributeName="transform"
+                         values="translate(0,0);translate(150,0);translate(0,0)"
+                         dur="4s"
+                         repeatCount="indefinite" />
+              </path>
+              <!-- green path for main line -->
+              <path class="snake-path snake-path-main"
+                    d="M0,100 Q150,50 250,100 T450,100">
+                <animate attributeName="d"
+                         values="
+                           M0,100 Q150,50 250,100 T450,100;
+                           M0,100 Q150,150 250,100 T450,100;
+                           M0,100 Q150,50 250,100 T450,100"
+                         dur="1.5s"
+                         repeatCount="indefinite" />
+                <animate attributeName="transform"
+                         values="translate(0,0);translate(150,0);translate(0,0)"
+                         dur="4s"
+                         repeatCount="indefinite" />
+              </path>
+            </svg></span></h1>
 
-        <canvas id="canvas" class="canvas-container"></canvas>
-
-        <div class="checkbox-item form-item">
-            <input type="checkbox">
-            <span>Включить подсветку пути</span>
+        <div class="info-score-block is-hide">
+            <p>Рекорд: <span class="record-text">0</span></p>
+            <p>Счет: <span class="score-text">0</span>, скорость: <span class="speed-text">150</span></p>
         </div>
 
-        <div>
-            <button class="start-button">Начать игру</button>
+        <div class="canvas-wrapper">
+            <div class="canvas-content">
+                <canvas id="canvas" class="canvas-game"></canvas>
+
+                <div class="game-overlay-block" data-state="start">
+                    <!-- start screen -->
+                    <div class="game-screen game-start-block" data-screen="start">
+                        <!-- Шаг 1 -->
+                        <div class="step-item visible">
+                            <p>Управление:</p>
+                            <p class="instruction-item"><span class="highlight">ПК:</span> стрелки</p>
+                            <p class="instruction-item"><span class="highlight">Смартфон:</span> свайпы</p>
+                            <p>Пауза: <strong>пробел</strong> или <strong>тап</strong></p>
+
+                            <button class="step-btn neon-btn">Далее ➤</button>
+                        </div>
+
+                        <!-- Шаг 2 -->
+                        <div class="step-item">
+                            <p class="instructions">
+                                Ешь яблоки 🍎<br/>
+                                Расти и не врежься в стену или в себя!<br/><br/>
+                                <strong>Рекорд:</strong> <span class="record-text">0</span>
+                            </p>
+
+                            <button class="step-btn control-button neon-btn" data-action="start">Начать игру</button>
+                        </div>
+                    </div>
+
+                    <!-- pause screen -->
+                    <div class="game-screen game-pause-block is-hidden" data-screen="resume">
+                        <h2 class="neon-text">ПАУЗА</h2>
+                        <div class="is-web">
+                            <p>
+                                Нажмите <strong>Space</strong><br/>
+                                или любую стрелку ⬆️, ⬇️, ⬅️, ➡️<br/>
+                                чтобы продолжить...
+                            </p>
+                        </div>
+                        <div class="is-mob">
+                            <p>
+                                Тапните или
+                                свайпните ⬆️, ⬇️, ⬅️, ➡️ по экрану<br/>
+                                чтобы продолжить...
+                            </p>
+                        </div>
+
+                        <button class="control-button neon-btn" data-action="resume">Продолжить</button>
+                    </div>
+
+                    <!-- game over screen -->
+                    <div class="game-screen game-over-block is-hidden" data-screen="end">
+                        <h2>Game Over</h2>
+                        <p class="score-item">Счет: <span class="score-text">0</span>, рекорд: <span class="record-text">0</span></p>
+
+                        <button class="control-button neon-btn" data-action="start">Попробовать снова</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="checkbox-item form-item is-hidden">
+            <input type="checkbox" class="path-checkbox">
+            <span>Включить подсветку пути</span>
         </div>
     </div>
 
 <script>
     // --- Initialization and DOM elements ---
     const contentContainer = document.querySelector('.content-container');
-    const scoreItem = document.querySelector('.score-item');
-    const recordItem = document.querySelector('.record-item');
-    let recordNum = JSON.parse(localStorage.getItem('record')) || 0;
-    recordItem.textContent = `Рекорд: ${recordNum}`;
-
-    const startButton = document.querySelector('.start-button');
-    const canvas = document.querySelector('.canvas-container');
+    const infoScoreBlock = document.querySelector('.info-score-block');
+    const scoreText = document.querySelectorAll('.score-text');
+    const recordText = document.querySelectorAll('.record-text');
+    const speedText = document.querySelectorAll('.speed-text');
+    const canvas = document.querySelector('.canvas-game');
     const ctx = canvas.getContext('2d');
 
     // --- Constants and global state ---
     const gridSize = 20;
-    let snake, direction, food, score, gameSpeed, gameRunning;
-    let isPaused = false;
+    let snake, direction, food, score, gameSpeed;
 
+    // Game state enum
+    const STATES = {
+        START: 'start',
+        PLAYING: 'playing',
+        PAUSE: 'pause',
+        GAMEOVER: 'gameover'
+    };
+
+    // Time & loop control
+    let isPaused = false;
     let lastFrameTime = 0; // last update time (for tracking delay)
     let animationID = null; // identifier for canceling rAF
+    let currentGameState = STATES.START;
+    let nextDirection = null;
 
     // UI settings
     const checkboxItem = document.querySelector('.checkbox-item');
-    const checkbox = document.querySelector('input');
+    const checkbox = document.querySelector('.path-checkbox');
     let isPathLighting = checkbox.checked ? true : false;
+    let recordNum = JSON.parse(localStorage.getItem('record')) || 0;
+
+    // UI elements
+    const overlay = document.querySelector('.game-overlay-block');
+    const controlButtons = document.querySelectorAll('.control-button');
+
+    recordText.forEach(item => item.textContent = recordNum);
 
     checkboxItem.addEventListener('click', e => {
         checkbox.checked = !checkbox.checked;
         isPathLighting = checkbox.checked;
     });
+
+    // Core state management
+    const setGameState = (newState) => {
+        currentGameState = newState;
+        overlay.dataset.state = newState;
+
+        if (newState !== STATES.PLAYING) {
+             // cancel loop, if no play
+             if (animationID) {
+                cancelAnimationFrame(animationID);
+                animationID = null;
+            }
+        }
+
+        const isGameActive = newState === STATES.PLAYING || newState === STATES.PAUSE;
+        if (isGameActive) {
+            checkboxItem.classList.remove('is-hidden');
+            infoScoreBlock.classList.remove('is-hide');
+        } else {
+            checkboxItem.classList.add('is-hidden');
+            infoScoreBlock.classList.add('is-hide');
+        }
+    };
 
     // --- Utilities ---
     // Canvas / UI
@@ -135,9 +533,7 @@
     // Position check
     // if there is no snake, create food
     const isPositionOnSnake = (position) => {
-        return snake.some(segment => {
-            return segment.x === position.x && segment.y === position.y;
-        });
+        return snake.some(segment => segment.x === position.x && segment.y === position.y);
     }
 
 
@@ -150,17 +546,21 @@
 
         // default: the snake moves to the right
         direction = "RIGHT";
+        nextDirection = null;
 
         // creating food
         food = getRandomFoodPosition(); // food = { x, y }
         score = 0;
         gameSpeed = 150;
-        gameRunning = true;
         isPaused = false; // important: reset pause
         lastFrameTime = 0; // initialize time
 
-        scoreItem.textContent = `Счет: 0, скорость: ${gameSpeed}`;
-        startButton.style.display = 'none';
+        // set info for score block
+        scoreText.forEach(item => item.textContent = score);
+        speedText.forEach(item => item.textContent = gameSpeed);
+
+        // change state
+        setGameState(STATES.PLAYING);
 
         // start rAF loop
         animationID = requestAnimationFrame(gameLoop);
@@ -168,29 +568,36 @@
 
     // ends the game, saves the record
     const gameOver = () => {
-        gameRunning = false;
-        console.log(`Игра окончена, Ваш счет: ${score}.`);
-        cancelAnimationFrame(animationID); // explicitly stop the loop
-        startButton.style.display = 'initial';
-
+        // set new record
         if (score > recordNum) {
-            recordItem.textContent = `Рекорд: ${score}`;
+            recordText.forEach(item => item.textContent = recordNum);
+            recordNum = score;
             localStorage.setItem('record', score);
         }
+
+        // change state
+        setGameState(STATES.GAMEOVER);
     }
 
     // toggles the pause state
     const pause = () => {
-        isPaused = !isPaused;
-        console.log(isPaused ? 'Игра на паузе' : 'Игра возобновлена');
+        if (currentGameState !== STATES.PLAYING)
+            return;
+        isPaused = true;
 
-        if (!isPaused) {
-            // do nothing — raf is already running and will continue by itself
-            // update time to avoid a sharp jump after unpausing
-            lastFrameTime = performance.now();
-            clearCanvas();
-        }
-        return;
+        setGameState(STATES.PAUSE);
+    }
+    const resumeGame = () => {
+        if (currentGameState !== STATES.PAUSE)
+            return;
+        isPaused = false;
+        // update time to avoid a sharp jump after unpausing
+        lastFrameTime = performance.now();
+
+        setGameState(STATES.PLAYING);
+
+        // start rAF loop
+        animationID = requestAnimationFrame(gameLoop);
     }
 
     // updates score, speed, creates new food
@@ -201,7 +608,9 @@
 
         if (gameSpeed > 50) gameSpeed -= 5;
 
-        scoreItem.textContent = `Счет: ${score}, скорость: ${gameSpeed}`;
+        // set info for score block
+        scoreText.forEach(item => item.textContent = score);
+        speedText.forEach(item => item.textContent = gameSpeed);
 
         if ('vibrate' in navigator) {
             navigator.vibrate(100);
@@ -223,6 +632,7 @@
         return newFoodPosition;
     }
 
+    // --- Game logic ---
     // Movement and collisions
     // updating the game state
     const calculateNextHeadPosition = () => {
@@ -256,13 +666,16 @@
 
     // Main update
     const updateGame = () => {
+        if (nextDirection) {
+            direction = nextDirection;
+            nextDirection = null; // clear buffer
+        }
+
         const head = calculateNextHeadPosition();
 
         // if hit a wall and run into ourselves - game over
         if (checkWallCollision(head) || checkSelfCollision(head)) {
             gameOver();
-            // gameRunning will be set to false, and we'll exit at the start of the next frame
-            animationID = requestAnimationFrame(gameLoop); // important: request the next frame so the exit can trigger!
             return;
         }
 
@@ -279,22 +692,6 @@
 
 
     // --- Rendering ---
-    const drawPauseScreen = () => {
-        clearCanvas();
-
-        // logic for displaying "pause"
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#fff';
-        ctx.font = '30px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('ПАУЗА', canvas.width / 2, canvas.height / 2);
-        ctx.font = '20px Arial';
-        ctx.fillText('Space / пробел — продолжить', canvas.width / 2, canvas.height / 2 + 30);
-        ctx.fillText('или нажмите любую стрелку', canvas.width / 2, canvas.height / 2 + 50);
-        ctx.fillText('⬆️, ⬇️, ⬅️, ➡️', canvas.width / 2, canvas.height / 2 + 75);
-    }
-
     const drawFood = () => {
         ctx.fillStyle = '#f00';
         ctx.fillRect(food.x, food.y, gridSize, gridSize);
@@ -311,8 +708,8 @@
     }
 
     const drawGrid = () => {
-        ctx.lineWidth = 0.1;
-        ctx.strokeStyle = "grey"
+        ctx.lineWidth = 0.2;
+        ctx.strokeStyle = '#ccc';
 
         // draw vertical lines
         for (let x = 0; x < canvas.width; x += 20) {
@@ -331,7 +728,7 @@
     }
 
     const drawPathHighlight = () => {
-        ctx.fillStyle = 'rgba(173, 216, 230, 0.3)';
+        ctx.fillStyle = 'rgba(173, 216, 230, 0.1)';
 
         if (direction === 'UP' || direction === 'DOWN') {
             // vertical row
@@ -358,16 +755,16 @@
     // --- Game loop & input handlers ---
     const gameLoop = (timestamp) => {
         // check if the game is running; if not, exit
-        if (!gameRunning) {
+        //if (!gameRunning) {
+        if (currentGameState !== STATES.PLAYING) {
             cancelAnimationFrame(animationID);
+            animationID = null;
             return;
         }
 
         // if the game is paused, do not continue the loop
         // and just request the next frame without updating logic
         if (isPaused) {
-            drawPauseScreen();
-
             // request the next frame
             animationID = requestAnimationFrame(gameLoop);
             return;
@@ -382,7 +779,8 @@
 
             updateGame();
 
-            if (gameRunning) {
+            // if (gameRunning) {
+            if (currentGameState === STATES.PLAYING) {
                 drawGame();
             }
         }
@@ -393,26 +791,15 @@
 
     // game controls
     const tryChangeDirection = (newDirection) => {
-        if (!gameRunning) return; // if game isn't running
-
-        // if the game is paused, any arrow key press will unpause the game
-        if (isPaused) {
-            if (['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(newDirection)) {
-                isPaused = false;
-                console.log(`Игра возобновлена: ${newDirection}`);
-                lastFrameTime = performance.now(); // Обновление времени
-            }
-        }
-
         // rules for changing direction
         if (newDirection === 'UP' && direction !== 'DOWN') {
-            direction = 'UP';
+            nextDirection = 'UP';
         } else if (newDirection === 'DOWN' && direction !== 'UP') {
-            direction = 'DOWN';
+            nextDirection = 'DOWN';
         } else if (newDirection === 'LEFT' && direction !== 'RIGHT') {
-            direction = 'LEFT';
+            nextDirection = 'LEFT';
         } else if (newDirection === 'RIGHT' && direction !== 'LEFT') {
-            direction = 'RIGHT';
+            nextDirection = 'RIGHT';
         }
     };
 
@@ -439,14 +826,21 @@
         // pause: 'space' - the same physical key
         if (code === 'Space') {
             event.preventDefault();
-            pause();
+            // pause();
+            if (currentGameState === STATES.PLAYING) {
+                pause();
+            } else if (currentGameState === STATES.PAUSE) {
+                resumeGame();
+            }
             return;
         }
 
         // if the game is paused, any arrow key press will unpause the game
-        if (isPaused) {
-            if (code.startsWith('Arrow')) {
+        if (currentGameState !== STATES.PLAYING) {
+            if (currentGameState === STATES.PAUSE && code.startsWith('Arrow')) {
+                // processing directions
                 handleKeyDirection(event.key);
+                resumeGame();
             }
             return;
         }
@@ -455,8 +849,28 @@
         handleKeyDirection(event.key);
     };
 
+    const handleButtonAction = (event) => {
+        const action = event.target.dataset.action;
+
+        if (!action) return;
+
+        switch (action) {
+            case 'start':
+                startGame();
+                break;
+            case 'resume':
+                resumeGame();
+                break;
+            default:
+                console.warn(`Неизвестное действие: ${action}`);
+        }
+    }
+
+    controlButtons.forEach(button => {
+        button.addEventListener('click', handleButtonAction);
+    });
     document.addEventListener('keydown', handleKeyboardInput);
-    startButton.addEventListener('click', startGame);
+
 
     // Input handling (Touch/Swipe)
     // variables to track touch events
@@ -480,7 +894,9 @@
     // touch end handler
     canvas.addEventListener('touchend', (event) => {
         event.preventDefault();
-        if (!gameRunning) return; // if the game is not running, do nothing
+
+        // if the game is not running, do nothing
+        if (currentGameState === STATES.START || currentGameState === STATES.GAMEOVER) return;
 
         const touchEndTime = Date.now();
         const touchDuration = touchEndTime - touchStartTime;
@@ -494,36 +910,67 @@
             Math.abs(deltaX) < maxTapDistance &&
             Math.abs(deltaY) < maxTapDistance
         ) {
-            pause();
+            if (currentGameState === STATES.PLAYING) {
+                pause();
+            } else if (currentGameState === STATES.PAUSE) {
+                resumeGame();
+            }
             return;
         }
 
         // check if the movement is large enough for a swipe
         if (Math.abs(deltaX) > minSwipeDistance || Math.abs(deltaY) > minSwipeDistance) {
-            let newDirection = null;
-
-            // determine the swipe direction
-            if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                // horizontal swipe
-                if (deltaX > 0 && direction !== 'LEFT') {
-                    direction = 'RIGHT';
-                } else if (deltaX < 0 && direction !== 'RIGHT') {
-                    direction = 'LEFT';
-                }
-            } else {
-                // vertical swipe
-                if (deltaY > 0 && direction !== 'UP') {
-                    direction = 'DOWN';
-                } else if (deltaY < 0 && direction !== 'DOWN') {
-                    direction = 'UP';
-                }
+            // if the game is paused, swipe will unpause the game
+            if (currentGameState === STATES.PAUSE) {
+                resumeGame();
             }
 
-            // call the general function to change direction
-            if (newDirection) {
-                tryChangeDirection(newDirection);
+            if (currentGameState === STATES.PLAYING) {
+                let newDirection = null;
+
+                // determine the swipe direction
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    // horizontal swipe
+                    if (deltaX > 0 && newDirection !== 'LEFT') {
+                        newDirection = 'RIGHT';
+                    } else if (deltaX < 0 && newDirection !== 'RIGHT') {
+                        newDirection = 'LEFT';
+                    }
+                } else {
+                    // vertical swipe
+                    if (deltaY > 0 && newDirection !== 'UP') {
+                        newDirection = 'DOWN';
+                    } else if (deltaY < 0 && newDirection !== 'DOWN') {
+                        newDirection = 'UP';
+                    }
+                }
+
+                // call the general function to change direction
+                if (newDirection) {
+                    tryChangeDirection(newDirection);
+                }
             }
         }
+    });
+
+
+    const nextButtons = document.querySelectorAll('.step-btn');
+    let currentStepElement = document.querySelector('.step-item.visible');
+
+    function updateStep() {
+        currentStepElement.classList.remove('visible');
+
+        const nextStep = currentStepElement.nextElementSibling;
+        if (nextStep && nextStep.classList.contains('step-item')) {
+            currentStepElement = nextStep;
+            currentStepElement.classList.add('visible');
+        } else {
+            document.querySelector('.snake').remove();
+            document.querySelector('h1').classList.remove('is-animate');
+        }
+    }
+    nextButtons.forEach(button => {
+        button.addEventListener('click', updateStep);
     });
 
 
@@ -554,14 +1001,17 @@
         canvas.height = canvas.width; // keep the field square
 
         // recalculate the snake and food positions if the game is running
-        if (gameRunning && snake && food) {
+        if (currentGameState !== STATES.START) {
             snake = snake.map(segment => ({
                 x: Math.min(Math.floor(segment.x / gridSize) * gridSize, canvas.width - gridSize),
                 y: Math.min(Math.floor(segment.y / gridSize) * gridSize, canvas.height - gridSize)
             }));
-
             food.x = Math.min(Math.floor(food.x / gridSize) * gridSize, canvas.width - gridSize);
             food.y = Math.min(Math.floor(food.y / gridSize) * gridSize, canvas.height - gridSize);
+
+            if (currentGameState === STATES.PLAYING) {
+                drawGame();
+            }
         }
     };
 
@@ -580,7 +1030,7 @@
 
     // call on initial load
     resizeCanvas();
-
+    setGameState(STATES.START)
 </script>
 
 </body>
