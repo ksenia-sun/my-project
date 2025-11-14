@@ -653,7 +653,7 @@
         // creating food
         food = getRandomFoodPosition(); // food = { x, y }
         score = 0;
-        gameSpeed = 150;
+        gameSpeed = 250;
         isPaused = false; // important: reset pause
         lastFrameTime = 0; // initialize time
 
@@ -708,7 +708,9 @@
         food = getRandomFoodPosition();
         score += 1;
 
-        if (gameSpeed > 50) gameSpeed -= 5;
+        if (gameSpeed > 150) gameSpeed -= 15;
+        else if (gameSpeed > 100) gameSpeed -= 10;
+        else if (gameSpeed > 50) gameSpeed -= 5;
 
         // set info for score block
         updateScoreUI();
