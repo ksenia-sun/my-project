@@ -115,7 +115,7 @@ const startGame = () => {
     snake = [{ ...getGridCenter() }];
 
     // default: the snake moves to the right
-    direction = "RIGHT";
+    direction = 'RIGHT';
     nextDirection = null;
 
     // creating food
@@ -283,14 +283,14 @@ const drawGrid = () => {
     ctx.strokeStyle = THEME.GRID;
 
     // draw vertical lines
-    for (let x = 0; x < canvas.width; x += 20) {
+    for (let x = 0; x < canvas.width; x += gridSize) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, canvas.height);
         ctx.stroke();
     }
     // draw horizontal lines
-    for (let y = 0; y < canvas.height; y += 20) {
+    for (let y = 0; y < canvas.height; y += gridSize) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(canvas.width, y);
@@ -350,7 +350,6 @@ const gameLoop = (timestamp) => {
 
         updateGame();
 
-        // if (gameRunning) {
         if (currentGameState === STATES.PLAYING) {
             drawGame();
         }
@@ -433,7 +432,7 @@ const handleButtonAction = (event) => {
             resumeGame();
             break;
         default:
-            console.warn(`Неизвестное действие: ${action}`);
+            console.warn(`Unknown action: ${action}`);
     }
 }
 
@@ -574,8 +573,10 @@ const resizeCanvas = () => {
             x: Math.min(Math.floor(segment.x / gridSize) * gridSize, canvas.width - gridSize),
             y: Math.min(Math.floor(segment.y / gridSize) * gridSize, canvas.height - gridSize)
         }));
-        food.x = Math.min(Math.floor(food.x / gridSize) * gridSize, canvas.width - gridSize);
-        food.y = Math.min(Math.floor(food.y / gridSize) * gridSize, canvas.height - gridSize);
+        if (food.x !== undefined && food.y !== undefined) {
+            food.x = Math.min(Math.floor(food.x / gridSize) * gridSize, canvas.width - gridSize);
+            food.y = Math.min(Math.floor(food.y / gridSize) * gridSize, canvas.height - gridSize);
+        }
 
         if (currentGameState === STATES.PLAYING) {
             drawGame();
@@ -599,4 +600,4 @@ window.addEventListener('orientationchange', debounceResize);
 // call on initial load
 readThemeFromCSS();
 resizeCanvas();
-setGameState(STATES.START)
+setGameState(STATES.START);

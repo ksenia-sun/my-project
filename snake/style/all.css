@@ -29,7 +29,7 @@
     --game-snake-body: var(--ui-accent-1);
     --game-food: #f00;
     --game-grid: var(--ui-text-secondary);
-    --game-path-highlight: rgba(173, 216, 230, 0.1);
+    --game-path-highlight: rgba(173, 216, 230, 0.2);
 }
 
 * {
