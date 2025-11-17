@@ -22,9 +22,10 @@ class SnakeGame {
         this.currentStepElement = document.querySelector('.step-item.visible');
 
         // --- Constants and global state ---
-        this.gridSize = options.gridSize || 20;
+        this.initialGridSize = options.gridSize || 20;
+        this.gridSize = this.initialGridSize;
+        this.responseBreakpoints = (options.response || []).sort((a, b) => a.responseSize - b.responseSize);
         this.initialGameSpeed = options.gameSpeed || 250;
-        this.responseSize = options.responseSize || 500;
 
         // Object for storing colors used in canvas
         this.THEME = {};
@@ -71,12 +72,14 @@ class SnakeGame {
         this.handleTouchStart = this.handleTouchStart.bind(this);
         this.handleTouchEnd = this.handleTouchEnd.bind(this);
         this.updateStep = this.updateStep.bind(this);
+        this.updateResponsiveSettings = this.updateResponsiveSettings.bind(this);
         this.debounceResize = this.debounceResize.bind(this);
 
         // --- Init ---
         this.recordText.forEach(item => item.textContent = this.recordNum);
         this.bindEvents();
         this.readThemeFromCSS();
+        this.updateResponsiveSettings(); // set gridSize dependung on screen width
         this.resizeCanvas(); // first resize for load page
         this.setGameState(this.STATES.START);
     }
@@ -112,6 +115,22 @@ class SnakeGame {
         this.THEME.SNAKE_BODY = style.getPropertyValue('--game-snake-body').trim();
         this.THEME.GRID = style.getPropertyValue('--game-grid').trim();
         this.THEME.PATH_HIGHLIGHT = style.getPropertyValue('--game-path-highlight').trim();
+    }
+
+    // Update gridSize and swipe value
+    updateResponsiveSettings() {
+        const currentWidth = window.innerWidth;
+        let newSize = this.initialGridSize;
+
+        for (const breakpoint of this.responseBreakpoints) {
+            if (currentWidth < breakpoint.responseSize) {
+                newSize = breakpoint.gridSize;
+                break;
+            }
+        }
+
+        this.gridSize = newSize;
+        this.minSwipeDistance = this.gridSize * this.SWIPE_GRID_THRESHOLD;
     }
 
     // Core state management
@@ -617,9 +636,17 @@ class SnakeGame {
 
     // debouncing for resize and orientationchange events
     debounceResize() {
-        if (window.innerWidth < this.responseSize) {
-            clearTimeout(this.resizeTimeout);
-            this.resizeTimeout = setTimeout(() => this.resizeCanvas(), 100);
-        }
+        clearTimeout(this.resizeTimeout);
+
+        this.resizeTimeout = setTimeout(() => {
+            const oldGridSize = this.gridSize;
+
+            this.updateResponsiveSettings();
+
+            if (oldGridSize !== this.gridSize) {
+                this.resizeCanvas();
+            }
+
+        }, 100);
     }
 }

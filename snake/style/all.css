@@ -413,6 +413,9 @@ body {
     .is-mob {
         display: block;
     }
+    .neon-btn {
+        font-size: 20px;
+    }
 }
 @media screen and (max-device-width: 350px) {
     .neon-btn {
