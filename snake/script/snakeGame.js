@@ -25,7 +25,8 @@ class SnakeGame {
         this.initialGridSize = options.gridSize || 20;
         this.gridSize = this.initialGridSize;
         this.responseBreakpoints = (options.response || []).sort((a, b) => a.responseSize - b.responseSize);
-        this.initialGameSpeed = options.gameSpeed || 250;
+        this.baseInitialGameSpeed = options.gameSpeed || 250;
+        this.initialGameSpeed = this.baseInitialGameSpeed;
 
         // Object for storing colors used in canvas
         this.THEME = {};
@@ -63,6 +64,10 @@ class SnakeGame {
         this.touchStartTime = 0;
         // States for resize
         this.resizeTimeout = null;
+        // States for acceleration
+        this.minSpeed = options.minSpeed || 50;
+        this.baseAccelerationSteps = (options.accelerationSteps || []).sort((a, b) => b.threshold - a.threshold); // save basic acceleration steps
+        this.currentAccelerationSteps = this.baseAccelerationSteps;
 
         // --- Bind 'this' ---
         this.gameLoop = this.gameLoop.bind(this);
@@ -121,16 +126,36 @@ class SnakeGame {
     updateResponsiveSettings() {
         const currentWidth = window.innerWidth;
         let newSize = this.initialGridSize;
+        let newInitialSpeed = this.baseInitialGameSpeed;
+        let newAccelerationSteps = this.baseAccelerationSteps;
 
         for (const breakpoint of this.responseBreakpoints) {
             if (currentWidth < breakpoint.responseSize) {
-                newSize = breakpoint.gridSize;
+                if (breakpoint.gridSize !== undefined) {
+                    newSize = breakpoint.gridSize;
+                }
+
+                if (breakpoint.gameSpeed !== undefined) {
+                    newInitialSpeed = breakpoint.gameSpeed;
+                }
+
+                if (breakpoint.accelerationSteps) {
+                    newAccelerationSteps = [...breakpoint.accelerationSteps].sort((a, b) => b.threshold - a.threshold);
+                }
+
                 break;
             }
         }
 
         this.gridSize = newSize;
         this.minSwipeDistance = this.gridSize * this.SWIPE_GRID_THRESHOLD;
+
+        this.initialGameSpeed = newInitialSpeed;
+        this.gameSpeed = newInitialSpeed;
+
+        this.currentAccelerationSteps = newAccelerationSteps;
+
+        this.updateScoreUI();
     }
 
     // Core state management
@@ -249,9 +274,14 @@ class SnakeGame {
         this.food = this.getRandomFoodPosition();
         this.score += 1;
 
-        if (this.gameSpeed > 150) this.gameSpeed -= 15;
-        else if (this.gameSpeed > 100) this.gameSpeed -= 10;
-        else if (this.gameSpeed > 50) this.gameSpeed -= 5;
+        for (const step of this.currentAccelerationSteps) {
+            if (this.gameSpeed > step.threshold) {
+                const newSpeed = this.gameSpeed - step.decrement;
+                this.gameSpeed = Math.max(newSpeed, this.minSpeed);
+
+                break;
+            }
+        }
 
         // set info for score block
         this.updateScoreUI();
